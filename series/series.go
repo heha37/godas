@@ -37,24 +37,22 @@ func (se *Series) InitElements(dataType element.Type,size int) {
 func (se *Series) Copy() (newSeries *Series) {
 	newSeries = new(Series)
 	dataType := se.dataType
+	size := se.Len()
 
-	var elements element.Elements
 	switch dataType {
 	case element.TypeInt:
-		elements = make(element.ElementsInt, se.Len())
-		copy(elements.(element.ElementsInt), se.elements.(element.ElementsInt))
+		newSeries.InitElements(element.TypeInt, size)
 	case element.TypeBool:
-		elements = make(element.ElementsBool, se.Len())
-		copy(elements.(element.ElementsBool), se.elements.(element.ElementsBool))
+		newSeries.InitElements(element.TypeBool, size)
 	case element.TypeString:
-		elements = make(element.ElementsString, se.Len())
-		copy(elements.(element.ElementsString), se.elements.(element.ElementsString))
+		newSeries.InitElements(element.TypeString, size)
 	}
-
-	return &Series{
-		elements: elements,
-		dataType: dataType,
+	for i:=0; i<size; i++ {
+		val := se.elements.Index(i).Copy()
+		newSeries.elements.Index(i).Set(val)
 	}
+	newSeries.dataType = dataType
+	return
 }
 
 func New(values interface{}) *Series {
@@ -68,6 +66,7 @@ func New(values interface{}) *Series {
 		for i:=0; i<size; i++ {
 			se.elements.Index(i).Set(vals[i])
 		}
+		se.dataType = element.TypeInt
 	case []bool:
 		vals := values.([]bool)
 		size := len(vals)
@@ -75,6 +74,7 @@ func New(values interface{}) *Series {
 		for i:=0; i<size; i++ {
 			se.elements.Index(i).Set(vals[i])
 		}
+		se.dataType = element.TypeBool
 	case []string:
 		vals := values.([]string)
 		size := len(vals)
@@ -82,6 +82,7 @@ func New(values interface{}) *Series {
 		for i:=0; i<size; i++ {
 			se.elements.Index(i).Set(vals[i])
 		}
+		se.dataType = element.TypeString
 	default:
 	}
 

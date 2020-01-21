@@ -21,5 +21,9 @@ type Elements interface {
 type Element interface {
 	Type() Type
 	Set(interface{})
+	IsNaN() bool
+	Copy() Element
 	String() string
+	Int() (int, error)
+	Bool() (bool, error)
 }

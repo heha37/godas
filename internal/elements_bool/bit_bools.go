@@ -1,0 +1,77 @@
+package elements_bool
+
+const (
+	chunkSize = 32
+
+	chunkNullValue = uint32(0xAAAAAAAA)
+)
+
+type bitBoolValue int
+const (
+	falseValue bitBoolValue = iota
+	nanValue
+	nullValue
+	trueValue
+)
+
+var bitMasks = [32]uint32{
+	0xC0000000,
+	0x30000000,
+	0x0C000000,
+	0x03000000,
+	0x00C00000,
+	0x00300000,
+	0x000C0000,
+	0x00030000,
+	0x0000C000,
+	0x00003000,
+	0x00000C00,
+	0x00000300,
+	0x000000C0,
+	0x00000030,
+	0x0000000C,
+	0x00000003,
+}
+
+var bitNaNMasks = [32]uint32{
+	0x40000000,
+	0x10000000,
+	0x04000000,
+	0x01000000,
+	0x00400000,
+	0x00100000,
+	0x00040000,
+	0x00010000,
+	0x00004000,
+	0x00001000,
+	0x00000400,
+	0x00000100,
+	0x00000040,
+	0x00000010,
+	0x00000004,
+	0x00000001,
+}
+
+var bitNullMasks = [32]uint32{
+	0x80000000,
+	0x20000000,
+	0x08000000,
+	0x02000000,
+	0x00800000,
+	0x00200000,
+	0x00080000,
+	0x00020000,
+	0x00008000,
+	0x00002000,
+	0x00000800,
+	0x00000200,
+	0x00000080,
+	0x00000020,
+	0x00000008,
+	0x00000002,
+}
+
+type BitBools struct {
+	bits []uint32
+	bitsSliceLen uint32
+}

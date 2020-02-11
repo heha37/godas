@@ -2,87 +2,48 @@ package series
 
 import (
 	"fmt"
-
-	"github.com/heha37/godas/element"
+	"github.com/hunknownz/godas/index"
+	"github.com/hunknownz/godas/internal/elements"
+	sbool "github.com/hunknownz/godas/internal/elements_bool"
+	sint "github.com/hunknownz/godas/internal/elements_int"
 )
 
 type Series struct {
-	elements element.Elements
-	dataType element.Type
+	elements elements.Elements
 }
 
-func (se *Series) String() string {
-	return fmt.Sprint(se.elements)
+func (se *Series) Copy() (newSeries *Series) {
+	newElements := se.elements.Copy()
+	newSeries = &Series{elements:newElements}
+	return
 }
 
 func (se *Series) Len() int {
 	return se.elements.Len()
 }
 
-func (se *Series) InitElements(dataType element.Type,size int) {
-	switch dataType {
-	case element.TypeInt:
-		se.elements = make(element.ElementsInt, size)
-		se.elements.Init(size)
-	case element.TypeBool:
-		se.elements = make(element.ElementsBool, size)
-		se.elements.Init(size)
-	case element.TypeString:
-		se.elements = make(element.ElementsString, size)
-		se.elements.Init(size)
-	default:
+func (se *Series) Subset(index index.IndexInt) (newSeries *Series, err error) {
+	newElements, err := se.elements.Subset(index)
+	if err != nil {
+		err = fmt.Errorf("subset series error: %w", err)
 	}
-}
-
-func (se *Series) Copy() (newSeries *Series) {
-	newSeries = new(Series)
-	dataType := se.dataType
-	size := se.Len()
-
-	switch dataType {
-	case element.TypeInt:
-		newSeries.InitElements(element.TypeInt, size)
-	case element.TypeBool:
-		newSeries.InitElements(element.TypeBool, size)
-	case element.TypeString:
-		newSeries.InitElements(element.TypeString, size)
-	}
-	for i:=0; i<size; i++ {
-		val := se.elements.Index(i).Copy()
-		newSeries.elements.Index(i).Set(val)
-	}
-	newSeries.dataType = dataType
+	newSeries = &Series{elements:newElements}
 	return
 }
 
-func New(values interface{}) *Series {
-	se := new(Series)
+func New(values interface{}) (se *Series) {
 
 	switch values.(type) {
 	case []int:
 		vals := values.([]int)
-		size := len(vals)
-		se.InitElements(element.TypeInt, size)
-		for i:=0; i<size; i++ {
-			se.elements.Index(i).Set(vals[i])
-		}
-		se.dataType = element.TypeInt
+		newElements := sint.New(vals)
+		se = &Series{elements:newElements}
 	case []bool:
 		vals := values.([]bool)
-		size := len(vals)
-		se.InitElements(element.TypeBool, size)
-		for i:=0; i<size; i++ {
-			se.elements.Index(i).Set(vals[i])
-		}
-		se.dataType = element.TypeBool
+		newElements := sbool.New(vals)
+		se = &Series{elements:newElements}
 	case []string:
-		vals := values.([]string)
-		size := len(vals)
-		se.InitElements(element.TypeString, size)
-		for i:=0; i<size; i++ {
-			se.elements.Index(i).Set(vals[i])
-		}
-		se.dataType = element.TypeString
+		//vals := values.([]string)
 	default:
 	}
 

@@ -11,8 +11,8 @@ import (
 
 type Elements []int
 
-func (elements Elements) Type() (sType types.ElementsType) {
-	return types.ElementsTypeInt
+func (elements Elements) Type() (sType types.Type) {
+	return types.TypeInt
 }
 
 func (elements Elements) Len() (sLen int) {

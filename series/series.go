@@ -6,6 +6,7 @@ import (
 	"github.com/hunknownz/godas/internal/elements"
 	sbool "github.com/hunknownz/godas/internal/elements_bool"
 	sint "github.com/hunknownz/godas/internal/elements_int"
+	"github.com/hunknownz/godas/types"
 )
 
 type Series struct {
@@ -16,6 +17,10 @@ func (se *Series) Copy() (newSeries *Series) {
 	newElements := se.elements.Copy()
 	newSeries = &Series{elements:newElements}
 	return
+}
+
+func (se *Series) Type() types.Type {
+	return se.elements.Type()
 }
 
 func (se *Series) Len() int {

@@ -6,7 +6,7 @@ import (
 )
 
 type Elements interface {
-	Type() types.ElementsType
+	Type() types.Type
 	String() string
 	Len() int
 	Copy() (newElements Elements)

@@ -12,8 +12,8 @@ import (
 
 type Elements = BitBools
 
-func (elements Elements) Type() (sType types.ElementsType) {
-	return types.ElementsTypeBool
+func (elements Elements) Type() (sType types.Type) {
+	return types.TypeBool
 }
 
 func (elements Elements) Len() int {

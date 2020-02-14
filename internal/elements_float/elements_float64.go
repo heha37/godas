@@ -13,7 +13,7 @@ type ElementFloat64 = float64
 type ElementsFloat64 []ElementFloat64
 
 func (elements ElementsFloat64) Type() (sType types.Type) {
-	return types.TypeFloat64
+	return types.TypeFloat
 }
 
 func (elements ElementsFloat64) Len() (sLen int) {

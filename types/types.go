@@ -7,7 +7,6 @@ const (
 	TypeInt64 Type = "int64"
 	TypeString Type = "string"
 	TypeBool Type = "bool"
-	TypeFloat32 Type = "float32"
-	TypeFloat64 Type = "float64"
+	TypeFloat Type = "float"
 
 )

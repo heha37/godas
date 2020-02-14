@@ -3,6 +3,7 @@ package elements_float
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
@@ -45,4 +46,14 @@ func (elements ElementsFloat64) Subset(idx index.IndexInt) (newElements elements
 
 	newElements = ElementsFloat64(newSlice)
 	return
+}
+
+func (elements ElementsFloat64) IsNaN() []bool {
+	elementsLen := elements.Len()
+	nanElements := make([]bool, elementsLen)
+	for i := 0; i < elementsLen; i++ {
+		isNaN := math.IsNaN(elements[i])
+		nanElements[i] = isNaN
+	}
+	return nanElements
 }

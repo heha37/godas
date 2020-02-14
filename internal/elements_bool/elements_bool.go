@@ -15,7 +15,7 @@ func (elements ElementsBool) Type() (sType types.Type) {
 }
 
 func (elements ElementsBool) Len() int {
-	return elements.bitSliceLen()
+	return elements.bitBoolsLen()
 }
 
 func (elements ElementsBool) String() string {
@@ -68,6 +68,19 @@ func (elements ElementsBool) Subset(idx index.IndexInt) (newElements elements.El
 	return
 }
 
+func (elements ElementsBool) IsNaN() []bool {
+	elementsLen := elements.Len()
+	nanElements := make([]bool, elements.Len())
+	for i := 0; i < elementsLen; i++ {
+		val, err := elements.location(i)
+		if err != nil {
+			err = fmt.Errorf("detect missing elements error: %w", err)
+		}
+		nanElements[i] = val == nanValue
+	}
+	return nanElements
+}
+
 func (elements ElementsBool) clearBits() {
 	for i := uint32(0); i < elements.bitsSliceLen; i++ {
 		elements.bits[i] = chunkNullValue
@@ -85,9 +98,9 @@ func (elements ElementsBool) location(coord int) (value bitBoolValue, err error)
 		err = errors.New(fmt.Sprintf("invalid index %d (index must be non-negative)", coord))
 		return
 	}
-	bitSliceLen := elements.bitSliceLen()
-	if coord >= bitSliceLen {
-		err = errors.New(fmt.Sprintf("invalid index %d (out of bounds for %d-element container)", coord, bitSliceLen))
+	boolsLen := elements.bitBoolsLen()
+	if coord >= boolsLen {
+		err = errors.New(fmt.Sprintf("invalid index %d (out of bounds for %d-element container)", coord, boolsLen))
 		return
 	}
 
@@ -106,7 +119,7 @@ func (elements ElementsBool) location(coord int) (value bitBoolValue, err error)
 	return
 }
 
-func (elements ElementsBool) bitSliceLen() int {
+func (elements ElementsBool) bitBoolsLen() int {
 	i := elements.bitsSliceLen - 1
 	preLen := int(i << 4)
 	lastChunk := elements.bits[i]
@@ -127,9 +140,9 @@ func (elements ElementsBool) set(coord int, value bitBoolValue) (err error){
 		err = errors.New(fmt.Sprintf("invalid index %d (index must be non-negative)", coord))
 		return
 	}
-	bitSliceLen := elements.bitSliceLen()
-	if coord >= bitSliceLen {
-		err = errors.New(fmt.Sprintf("invalid index %d (out of bounds for %d-element container)", coord, bitSliceLen))
+	boolsLen := elements.bitBoolsLen()
+	if coord >= boolsLen {
+		err = errors.New(fmt.Sprintf("invalid index %d (out of bounds for %d-element container)", coord, boolsLen))
 		return
 	}
 

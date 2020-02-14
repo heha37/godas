@@ -6,6 +6,8 @@ import (
 	"github.com/hunknownz/godas/internal/elements"
 	sbool "github.com/hunknownz/godas/internal/elements_bool"
 	sint "github.com/hunknownz/godas/internal/elements_int"
+	sstring "github.com/hunknownz/godas/internal/elements_string"
+	sfloat "github.com/hunknownz/godas/internal/elements_float"
 	"github.com/hunknownz/godas/types"
 )
 
@@ -36,20 +38,44 @@ func (se *Series) Subset(index index.IndexInt) (newSeries *Series, err error) {
 	return
 }
 
+func (se *Series) IsNaN() []bool {
+	return se.elements.IsNaN()
+}
+
 func New(values interface{}) (se *Series) {
 
 	switch values.(type) {
 	case []int:
 		vals := values.([]int)
-		newElements := sint.New(vals)
+		newElements := sint.NewElementsInt(vals)
+		se = &Series{elements:newElements}
+	case []int64:
+		vals := values.([]int64)
+		newElements := sint.NewElementsInt64(vals)
 		se = &Series{elements:newElements}
 	case []bool:
 		vals := values.([]bool)
-		newElements := sbool.New(vals)
+		newElements := sbool.NewElementsBool(vals)
 		se = &Series{elements:newElements}
 	case []string:
-		//vals := values.([]string)
+		vals := values.([]string)
+		newElements := sstring.NewElementsString(vals)
+		se = &Series{elements:newElements}
+	case []float32:
+		vals := values.([]float32)
+		valsLen := len(vals)
+		vals64 := make([]float64, valsLen)
+		for i := 0; i < valsLen; i++ {
+			vals64[i] = float64(vals[i])
+		}
+		newElements := sfloat.NewElementsFloat64(vals64)
+		se = &Series{elements:newElements}
+	case []float64:
+		vals := values.([]float64)
+		newElements := sfloat.NewElementsFloat64(vals)
+		se = &Series{elements:newElements}
 	default:
+
 	}
 
 	return se

@@ -3,7 +3,6 @@ package elements_string
 import (
 	"errors"
 	"fmt"
-
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
 	"github.com/hunknownz/godas/types"
@@ -11,6 +10,10 @@ import (
 
 type ElementString = string
 type ElementsString []ElementString
+
+const (
+	ElementNaNString ElementString = "NaN"
+)
 
 func (elements ElementsString) Type() (sType types.Type) {
 	return types.TypeString
@@ -45,4 +48,14 @@ func (elements ElementsString) Subset(idx index.IndexInt) (newElements elements.
 
 	newElements = ElementsString(newSlice)
 	return
+}
+
+func (elements ElementsString) IsNaN() []bool {
+	elementsLen := elements.Len()
+	nanElements := make([]bool, elementsLen)
+	for i := 0; i < elementsLen; i++ {
+		isNaN := elements[i] == ElementNaNString
+		nanElements[i] = isNaN
+	}
+	return nanElements
 }

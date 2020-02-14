@@ -11,5 +11,6 @@ type Elements interface {
 	Len() int
 	Copy() (newElements Elements)
 	Subset(index.IndexInt) (newElements Elements, err error)
+	IsNaN() []bool
 }
 

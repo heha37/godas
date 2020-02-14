@@ -3,6 +3,7 @@ package elements_int
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
@@ -11,6 +12,10 @@ import (
 
 type ElementInt64 = int64
 type ElementsInt64 []ElementInt64
+
+const (
+	ElementNaNInt64 ElementInt64 = math.MinInt64
+)
 
 func (elements ElementsInt64) Type() (sType types.Type) {
 	return types.TypeInt64
@@ -45,4 +50,14 @@ func (elements ElementsInt64) Subset(idx index.IndexInt) (newElements elements.E
 
 	newElements = ElementsInt64(newSlice)
 	return
+}
+
+func (elements ElementsInt64) IsNaN() []bool {
+	elementsLen := elements.Len()
+	nanElements := make([]bool, elementsLen)
+	for i := 0; i < elementsLen; i++ {
+		isNaN := elements[i] == ElementNaNInt64
+		nanElements[i] = isNaN
+	}
+	return nanElements
 }

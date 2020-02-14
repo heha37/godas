@@ -3,9 +3,72 @@ package elements_bool
 import (
 	"errors"
 	"fmt"
+	"github.com/hunknownz/godas/index"
+	"github.com/hunknownz/godas/internal/elements"
+	"github.com/hunknownz/godas/types"
 )
 
-func (elements Elements) clearBits() {
+type ElementsBool = BitBools
+
+func (elements ElementsBool) Type() (sType types.Type) {
+	return types.TypeBool
+}
+
+func (elements ElementsBool) Len() int {
+	return elements.bitSliceLen()
+}
+
+func (elements ElementsBool) String() string {
+	return fmt.Sprint(elements)
+}
+
+func (elements ElementsBool) Copy() (newElements elements.Elements) {
+	newBits := make([]uint32, elements.bitsSliceLen)
+	copy(newBits, elements.bits)
+	newBitBools := BitBools{
+		bits: newBits,
+		bitsSliceLen: elements.bitsSliceLen,
+	}
+
+	newElements = newBitBools
+	return
+}
+
+func (elements ElementsBool) Subset(idx index.IndexInt) (newElements elements.Elements, err error) {
+	idxLen := len(idx)
+	if elements.Len() < idxLen {
+		err = errors.New(fmt.Sprintf("index size %d off elements_int size %d", idxLen, elements.Len()))
+		return
+	}
+	newBitsSliceLen := idxLen >> 4
+	if (newBitsSliceLen << 4) != idxLen {
+		newBitsSliceLen = newBitsSliceLen + 1
+	}
+	newBits := make([]uint32, newBitsSliceLen)
+	newBitBools := BitBools{
+		bits: newBits,
+		bitsSliceLen: uint32(newBitsSliceLen),
+	}
+	newBitBools.clearBits()
+
+	for bitsI, index := range idx {
+		value, e  := elements.location(int(index))
+		if e != nil {
+			err = fmt.Errorf("subset bool elements error: %w", e)
+			return
+		}
+		e = newBitBools.set(bitsI, value)
+		if e != nil {
+			err = fmt.Errorf("subset bool elements error: %w", e)
+			return
+		}
+	}
+
+	newElements = newBitBools
+	return
+}
+
+func (elements ElementsBool) clearBits() {
 	for i := uint32(0); i < elements.bitsSliceLen; i++ {
 		elements.bits[i] = chunkNullValue
 	}
@@ -17,7 +80,7 @@ func calculateChunkAndBitIndex(coord int) (chunkI, bitsI int) {
 	return
 }
 
-func (elements Elements) location(coord int) (value bitBoolValue, err error){
+func (elements ElementsBool) location(coord int) (value bitBoolValue, err error){
 	if coord < 0 {
 		err = errors.New(fmt.Sprintf("invalid index %d (index must be non-negative)", coord))
 		return
@@ -43,7 +106,7 @@ func (elements Elements) location(coord int) (value bitBoolValue, err error){
 	return
 }
 
-func (elements Elements) bitSliceLen() int {
+func (elements ElementsBool) bitSliceLen() int {
 	i := elements.bitsSliceLen - 1
 	preLen := int(i << 4)
 	lastChunk := elements.bits[i]
@@ -59,7 +122,7 @@ func (elements Elements) bitSliceLen() int {
 	return preLen + sufLen
 }
 
-func (elements Elements) set(coord int, value bitBoolValue) (err error){
+func (elements ElementsBool) set(coord int, value bitBoolValue) (err error){
 	if coord < 0 {
 		err = errors.New(fmt.Sprintf("invalid index %d (index must be non-negative)", coord))
 		return

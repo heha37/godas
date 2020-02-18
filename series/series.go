@@ -3,6 +3,7 @@ package series
 import (
 	"fmt"
 	"github.com/hunknownz/godas/index"
+	"github.com/hunknownz/godas/internal/condition"
 	"github.com/hunknownz/godas/internal/elements"
 	sbool "github.com/hunknownz/godas/internal/elements_bool"
 	sint "github.com/hunknownz/godas/internal/elements_int"
@@ -42,8 +43,30 @@ func (se *Series) IsNaN() []bool {
 	return se.elements.IsNaN()
 }
 
-func New(values interface{}) (se *Series) {
+func (se *Series) IsCondition(cond *condition.Condition) (ixs index.IndexBool, err error) {
+	expr := cond.Prepare()
+	seLen := se.elements.Len()
+	ixs = make(index.IndexBool, seLen)
+	for i := 0; i < seLen; i++ {
+		element, e := se.elements.Location(i)
+		if e != nil {
+			err = fmt.Errorf("is condition error: %w", e)
+			return
+		}
+		ixs[i] = element.EvaluateCondition(expr)
+		if element.Err != nil {
+			err = element.Err
+			return
+		}
+	}
+	return ixs, nil
+}
 
+func NewCondition() *condition.Condition {
+	return condition.NewCondition(condition.ConditionTypeSeries)
+}
+
+func New(values interface{}) (se *Series) {
 	switch values.(type) {
 	case []int:
 		vals := values.([]int)

@@ -57,3 +57,18 @@ func (elements ElementsFloat64) IsNaN() []bool {
 	}
 	return nanElements
 }
+
+func (elements ElementsFloat64) Location(coord int) (element elements.ElementValue, err error) {
+	if coord < 0 {
+		err = errors.New(fmt.Sprintf("invalid index %d (index must be non-negative)", coord))
+		return
+	}
+	float64Len := elements.Len()
+	if coord >= float64Len {
+		err = errors.New(fmt.Sprintf("invalid index %d (out of bounds for %d-element container)", coord, float64Len))
+		return
+	}
+	element.Value = elements[coord]
+	element.Type = types.TypeFloat
+	return
+}

@@ -81,6 +81,17 @@ func (elements ElementsBool) IsNaN() []bool {
 	return nanElements
 }
 
+func (elements ElementsBool) Location(coord int) (element elements.ElementValue, err error) {
+	val, err := elements.location(coord)
+	if err != nil {
+		err = fmt.Errorf("location error: %w", err)
+	}
+	element.Type = types.TypeBool
+	element.IsNaN = val == nanValue
+	element.Value = val == trueValue
+	return
+}
+
 func (elements ElementsBool) clearBits() {
 	for i := uint32(0); i < elements.bitsSliceLen; i++ {
 		elements.bits[i] = chunkNullValue

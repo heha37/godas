@@ -8,5 +8,4 @@ const (
 	TypeString Type = "string"
 	TypeBool Type = "bool"
 	TypeFloat Type = "float"
-
 )

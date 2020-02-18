@@ -3,7 +3,7 @@ package condition
 import "fmt"
 
 const (
-	tokenliteral = iota
+	tokenLiteral = iota
 	tokenOperatorAnd
 	tokenOperatorOr
 )
@@ -26,7 +26,7 @@ type condToken struct {
 func (token *condToken) String() string {
 	var condString string
 	switch token.tokenType {
-	case tokenliteral:
+	case tokenLiteral:
 		condString = fmt.Sprintf("%s", token.cond)
 	case tokenOperatorAnd:
 		condString = operatorAnd
@@ -41,6 +41,8 @@ type condAST struct {
 
 	curToken *condToken
 	curIndex int
+
+	expr ExprAST
 
 	Err error
 }
@@ -59,7 +61,7 @@ func (ast *condAST) parseToken() ExprAST {
 		return nil
 	}
 	switch ast.curToken.tokenType {
-	case tokenliteral:
+	case tokenLiteral:
 		valExprAST := ValueExprAST{
 		    Value: ast.curToken.cond,
 		}
@@ -98,9 +100,6 @@ func (ast *condAST) parseExpr() (root ExprAST) {
 	for opExpr := ast.parseToken(); opExpr != nil; opExpr = ast.parseToken(){
 		op := opExpr.(BinaryExprAST)
 		prec := op.getPrecedence()
-		fmt.Printf("%v\n", op)
-		fmt.Printf("%v\n", stack.Peek())
-		fmt.Printf("%v\n", stack.PeekSecond())
 		prevOp := stack.PeekSecond().(BinaryExprAST)
 		prevPrec := prevOp.getPrecedence()
 		for stack.Len() > 2 && prec < prevPrec {

@@ -3,6 +3,7 @@ package dataframe
 import (
 	"errors"
 	"fmt"
+	"github.com/hunknownz/godas/internal/condition"
 
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/series"
@@ -14,6 +15,8 @@ type DataFrame struct {
 	nSeries []*series.Series
 	fields []string
 	fieldSeriesMap map[string]int
+
+	Err error
 }
 
 func (df *DataFrame) Len() int {
@@ -109,7 +112,88 @@ func (df *DataFrame) Select(columns SelectionColumns) (newDataFrame *DataFrame, 
 	return
 }
 
+func (df *DataFrame) GetSeriesByColumn(column string) (newSeries *series.Series, err error) {
+	ok, _ := utils.ArrayContain(df.fields, column)
+	if !ok {
+		err = errors.New(fmt.Sprintf("column name %q not found", column))
+		return
+	}
+	oldSeriesI := df.fieldSeriesMap[column]
+	oldSeries := df.nSeries[oldSeriesI]
+	newSeries = oldSeries.Copy()
+	return
+}
 
+func (df *DataFrame) evaluateCondition(expr condition.ExprAST) index.IndexBool {
+	var l, r index.IndexBool
+	switch expr.(type) {
+	case condition.BinaryExprAST:
+		ast := expr.(condition.BinaryExprAST)
+		l = df.evaluateCondition(ast.Lhs)
+		r = df.evaluateCondition(ast.Rhs)
+		switch ast.Op {
+		case "&&":
+			l.And(r)
+			return l
+		case "||":
+			l.Or(r)
+			return l
+		}
+	case condition.ValueExprAST:
+		cond := expr.(condition.ValueExprAST).Value
+		cmp := cond.CompItem
+		seriesVal, err := df.GetSeriesByColumn(cmp.Column)
+		if err != nil {
+			df.Err = err
+			return l
+		}
+
+		newCondition := series.NewCondition()
+		newCondition.Or(cmp.Comparator, cmp.Value)
+		ixs, err := seriesVal.IsCondition(newCondition)
+		if err != nil {
+			df.Err = err
+			return ixs
+		}
+		return ixs
+	}
+
+	l = make(index.IndexBool, df.nSeries[0].Len())
+	for i := 0; i < len(l); i++ {
+		l[i] = true
+	}
+	return l
+}
+
+func (df *DataFrame) IsCondition(cond *condition.Condition) (ixs index.IndexBool, err error) {
+	expr := cond.Prepare()
+	ixs = df.evaluateCondition(expr)
+	if df.Err != nil {
+		err = fmt.Errorf("filter error: %w", df.Err)
+		return
+	}
+	return
+}
+
+func (df *DataFrame) Filter(cond *condition.Condition) (newDataFrame *DataFrame, err error) {
+	ixs, err := df.IsCondition(cond)
+	if err != nil {
+		err = fmt.Errorf("filter error: %w", err)
+		return
+	}
+	idx := make(index.IndexInt, 0)
+	for ix, ixVal := range ixs {
+		if ixVal {
+			idx = append(idx, uint32(ix))
+		}
+	}
+	newDataFrame, err = df.Subset(idx)
+	if err != nil {
+		err = fmt.Errorf("filter error: %w", err)
+		return
+	}
+	return
+}
 
 func (df *DataFrame) checkAndParseSelectionColumns(columns SelectionColumns) (iFields, iSeries []int, err error) {
 	switch columns.(type) {
@@ -155,7 +239,11 @@ func (df *DataFrame) checkAndParseSelectionColumns(columns SelectionColumns) (iF
 	return
 }
 
-func New(ses ...*series.Series) (df *DataFrame, err error) {
+func NewCondition() *condition.Condition {
+	return condition.NewCondition(condition.ConditionTypeDataFrame)
+}
+
+func NewFromSeries(ses ...*series.Series) (df *DataFrame, err error) {
 	if ses ==nil || len(ses) == 0 {
 		df = &DataFrame{
 			nSeries: make([]*series.Series, 0, 0),

@@ -62,6 +62,26 @@ func (se *Series) IsCondition(cond *condition.Condition) (ixs index.IndexBool, e
 	return ixs, nil
 }
 
+func (se *Series) Filter(cond *condition.Condition) (newSeries *Series, err error) {
+	ixs, err := se.IsCondition(cond)
+	if err != nil {
+		err = fmt.Errorf("filter error: %w", err)
+		return
+	}
+	idx := make(index.IndexInt, 0)
+	for ix, ixVal := range ixs {
+		if ixVal {
+			idx = append(idx, uint32(ix))
+		}
+	}
+	newSeries, err = se.Subset(idx)
+	if err != nil {
+		err = fmt.Errorf("filter error: %w", err)
+		return
+	}
+	return
+}
+
 func NewCondition() *condition.Condition {
 	return condition.NewCondition(condition.ConditionTypeSeries)
 }

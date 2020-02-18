@@ -124,7 +124,7 @@ func (cond *Condition) And(comparator string, value interface{}, columns ...stri
 	}
 	tokenLiteral := &condToken{
 		cond: condVal,
-		tokenType: tokenliteral,
+		tokenType: tokenLiteral,
 	}
 	ast.tokens = append(ast.tokens, tokenLiteral)
 
@@ -157,7 +157,7 @@ func (cond *Condition) Or(comparator string, value interface{}, columns ...strin
 	}
 	tokenLiteral := &condToken{
 		cond: condVal,
-		tokenType: tokenliteral,
+		tokenType: tokenLiteral,
 	}
 	ast.tokens = append(ast.tokens, tokenLiteral)
 
@@ -168,7 +168,10 @@ func (cond *Condition) Or(comparator string, value interface{}, columns ...strin
 }
 
 func (cond *Condition) Prepare() ExprAST {
-	return cond.ast.parseExpr()
+	if cond.ast.expr == nil {
+		cond.ast.expr = cond.ast.parseExpr()
+	}
+	return cond.ast.expr
 }
 
 func NewCondition(condType int) *Condition {

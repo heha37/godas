@@ -3,9 +3,13 @@ package dataframe
 import (
 	"errors"
 	"fmt"
-	"github.com/hunknownz/godas/internal/condition"
+	"io"
+	"io/ioutil"
+	"strings"
 
 	"github.com/hunknownz/godas/index"
+	"github.com/hunknownz/godas/internal/condition"
+	gio "github.com/hunknownz/godas/internal/io"
 	"github.com/hunknownz/godas/series"
 	"github.com/hunknownz/godas/utils"
 	"strconv"
@@ -276,5 +280,36 @@ func NewFromSeries(ses ...*series.Series) (df *DataFrame, err error) {
 		df.fieldSeriesMap[key] = i
 	}
 
+	return
+}
+
+func ReadCSV(filepathOrBufferstr interface{}) (df *DataFrame, err error) {
+	var	reader io.Reader
+	switch filepathOrBufferstr.(type) {
+	case string:
+		filepath := filepathOrBufferstr.(string)
+		b, e := ioutil.ReadFile(filepath)
+		if e != nil {
+			err = fmt.Errorf("read file %s error: %w", filepath, e)
+			return
+		}
+		reader = strings.NewReader(string(b))
+	}
+	dataMap, headers, err := gio.ReadCSV(reader)
+	if err != nil {
+		err = fmt.Errorf("read csv error: %w", err)
+		return
+	}
+
+	colNum := len(headers)
+	df = &DataFrame{
+		nSeries: make([]*series.Series, colNum),
+		fields: headers,
+		fieldSeriesMap: make(map[string]int),
+	}
+	for columnI, header := range headers {
+		df.fieldSeriesMap[header] = columnI
+		df.nSeries[columnI] = series.New(dataMap[header])
+	}
 	return
 }

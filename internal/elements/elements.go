@@ -1,10 +1,12 @@
 package elements
 
 import (
+	"errors"
 	"fmt"
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/condition"
 	"github.com/hunknownz/godas/types"
+	"log"
 )
 
 type ElementValue struct {
@@ -13,6 +15,32 @@ type ElementValue struct {
 	IsNaN bool
 
 	Err error
+}
+
+func (element ElementValue) String() (string, error) {
+	if s, ok := (element.Value).(string); ok {
+		return s, nil
+	}
+	return "", errors.New("type assertion to string failed")
+}
+
+func (element ElementValue) MustString(args ...string) string {
+	var def string
+
+	switch len(args) {
+	case 0:
+	case 1:
+		def = args[0]
+	default:
+		log.Panicf("MustString() received too many arguments %d", len(args))
+	}
+
+	s, err := element.String()
+	if err == nil {
+		return s
+	}
+
+	return def
 }
 
 func (element ElementValue) Compare(cond *condition.CondValue) (result bool, err error) {

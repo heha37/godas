@@ -82,6 +82,10 @@ func (se *Series) Filter(cond *condition.Condition) (newSeries *Series, err erro
 	return
 }
 
+func (se *Series) At(coord int) (value elements.ElementValue, err error) {
+	return se.elements.Location(coord)
+}
+
 func NewCondition() *condition.Condition {
 	return condition.NewCondition(condition.ConditionTypeSeries)
 }

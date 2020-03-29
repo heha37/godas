@@ -3,6 +3,7 @@ package dataframe
 import (
 	"errors"
 	"fmt"
+	"github.com/hunknownz/godas/internal/elements"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -24,7 +25,10 @@ type DataFrame struct {
 }
 
 func (df *DataFrame) Len() int {
-	return len(df.fields)
+	if len(df.nSeries) != 0 {
+		return df.nSeries[0].Len()
+	}
+	return 0
 }
 
 func checkColumnsLengths(ses ...*series.Series) (rows, cols int, err error) {
@@ -197,6 +201,12 @@ func (df *DataFrame) Filter(cond *condition.Condition) (newDataFrame *DataFrame,
 		return
 	}
 	return
+}
+
+func (df *DataFrame) At(rowLabel int, columnLabel string) (value elements.ElementValue, err error) {
+	i := df.fieldSeriesMap[columnLabel]
+	se := df.nSeries[i]
+	return se.At(rowLabel)
 }
 
 func (df *DataFrame) checkAndParseSelectionColumns(columns SelectionColumns) (iFields, iSeries []int, err error) {

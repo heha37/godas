@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-func ReadCSV(reader io.Reader) (dataMap map[string]interface{}, headers []string, err error) {
+func NewFromCSV(reader io.Reader) (dataMap map[string]interface{}, headers []string, err error) {
 	csvReader := csv.NewReader(reader)
 	csvReader.LazyQuotes = true
 	records, e := csvReader.ReadAll()

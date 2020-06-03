@@ -6,6 +6,7 @@ import (
 	"github.com/hunknownz/godas/internal/elements"
 	"io"
 	"io/ioutil"
+	"reflect"
 	"strings"
 
 	"github.com/hunknownz/godas/index"
@@ -20,6 +21,8 @@ type DataFrame struct {
 	nSeries []*series.Series
 	fields []string
 	fieldSeriesMap map[string]int
+
+	sourceType reflect.Type
 
 	Err error
 }
@@ -258,7 +261,7 @@ func NewCondition() *condition.Condition {
 }
 
 func NewFromSeries(ses ...*series.Series) (df *DataFrame, err error) {
-	if ses ==nil || len(ses) == 0 {
+	if ses == nil || len(ses) == 0 {
 		df = &DataFrame{
 			nSeries: make([]*series.Series, 0, 0),
 			fields: make([]string, 0, 0),
@@ -285,7 +288,10 @@ func NewFromSeries(ses ...*series.Series) (df *DataFrame, err error) {
 	}
 
 	for i := 0; i < colNum; i++ {
-		key := strconv.Itoa(i)
+		key := nSeries[i].FieldName
+		if key == "" {
+			key = strconv.Itoa(i)
+		}
 		df.fields[i] = key
 		df.fieldSeriesMap[key] = i
 	}
@@ -293,7 +299,129 @@ func NewFromSeries(ses ...*series.Series) (df *DataFrame, err error) {
 	return
 }
 
-func ReadCSV(filepathOrBufferstr interface{}) (df *DataFrame, err error) {
+func generateTypeSeries(valuesValue reflect.Value, fieldIndex int, valueType string, fieldName string, ptrFlag bool)(newSeries *series.Series) {
+	seriesLen := valuesValue.Len()
+
+	switch valueType {
+	case "float", "float32", "float64":
+		elements := make([]float64, seriesLen)
+		for i := 0; i < seriesLen; i++ {
+			var val reflect.Value
+			if ptrFlag {
+				val = valuesValue.Index(i).Elem().Field(fieldIndex)
+			} else {
+				val = valuesValue.Index(i).Field(fieldIndex)
+			}
+
+			elements[i] = val.Float()
+		}
+		newSeries = series.New(elements, fieldName)
+	case "int8", "int16", "int", "int32", "int64":
+		elements := make([]int64, seriesLen)
+		for i := 0; i < seriesLen; i++ {
+			var val reflect.Value
+			if ptrFlag {
+				val = valuesValue.Index(i).Elem().Field(fieldIndex)
+			} else {
+				val = valuesValue.Index(i).Field(fieldIndex)
+			}
+
+			elements[i] = val.Int()
+		}
+		newSeries = series.New(elements, fieldName)
+	case "string":
+		elements := make([]string, seriesLen)
+		for i := 0; i < seriesLen; i++ {
+			var val reflect.Value
+			if ptrFlag {
+				val = valuesValue.Index(i).Elem().Field(fieldIndex)
+			} else {
+				val = valuesValue.Index(i).Field(fieldIndex)
+			}
+
+			elements[i] = val.String()
+		}
+		newSeries = series.New(elements, fieldName)
+	case "bool":
+		elements := make([]bool, seriesLen)
+		for i := 0; i < seriesLen; i++ {
+			var val reflect.Value
+			if ptrFlag {
+				val = valuesValue.Index(i).Elem().Field(fieldIndex)
+			} else {
+				val = valuesValue.Index(i).Field(fieldIndex)
+			}
+
+			elements[i] = val.Bool()
+		}
+		newSeries = series.New(elements, fieldName)
+	}
+	return
+}
+
+func NewFromStructs(values interface{}) (df *DataFrame, err error) {
+	if values == nil {
+		df = &DataFrame{
+			nSeries: make([]*series.Series, 0, 0),
+			fields: make([]string, 0, 0),
+			fieldSeriesMap: make(map[string]int),
+		}
+		return
+	}
+
+	valuesType, valuesValue := reflect.TypeOf(values), reflect.ValueOf(values)
+	valuesKind := valuesType.Kind()
+	if valuesKind != reflect.Slice {
+		err = fmt.Errorf("type %s isn't supported, must be slice", valuesKind)
+		return
+	}
+
+	ptrFlag := false
+	valueType := valuesType.Elem()
+	valueKind := valueType.Kind()
+	if valueKind != reflect.Ptr && valueKind != reflect.Struct {
+		err = fmt.Errorf("type %s isn't supported, must be struct slice", valueKind)
+		return
+	}
+	if valueKind == reflect.Ptr {
+		valueType = valueType.Elem()
+		valueKind = valueType.Kind()
+		ptrFlag = true
+	}
+	if valueKind != reflect.Struct {
+		err = fmt.Errorf("type %s isn't supported, must be struct slice", valueKind)
+		return
+	}
+
+	if valuesValue.Len() == 0 {
+		df = &DataFrame{
+			nSeries: make([]*series.Series, 0, 0),
+			fields: make([]string, 0, 0),
+			fieldSeriesMap: make(map[string]int),
+		}
+		return
+	}
+
+	fieldsNum := valueType.NumField()
+	nSeries := make([]*series.Series, fieldsNum)
+
+	for i := 0; i < fieldsNum; i++ {
+		field := valueType.Field(i)
+		fieldName := field.Name
+		fieldType := field.Type.String()
+
+		nSeries[i] = generateTypeSeries(valuesValue, i, fieldType, fieldName, ptrFlag)
+	}
+
+	df, err = NewFromSeries(nSeries...)
+	if err != nil {
+		err = fmt.Errorf("new dataframe from series error: %w", err)
+		return
+	}
+	return
+}
+
+func NewFromCSV(filepathOrBufferstr interface{}) (df *DataFrame, err error) {
 	var	reader io.Reader
 	switch filepathOrBufferstr.(type) {
 	case string:
@@ -305,7 +433,7 @@ func ReadCSV(filepathOrBufferstr interface{}) (df *DataFrame, err error) {
 		}
 		reader = strings.NewReader(string(b))
 	}
-	dataMap, headers, err := gio.ReadCSV(reader)
+	dataMap, headers, err := gio.NewFromCSV(reader)
 	if err != nil {
 		err = fmt.Errorf("read csv error: %w", err)
 		return
@@ -319,7 +447,7 @@ func ReadCSV(filepathOrBufferstr interface{}) (df *DataFrame, err error) {
 	}
 	for columnI, header := range headers {
 		df.fieldSeriesMap[header] = columnI
-		df.nSeries[columnI] = series.New(dataMap[header])
+		df.nSeries[columnI] = series.New(dataMap[header], header)
 	}
 	return
 }

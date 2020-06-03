@@ -13,12 +13,16 @@ import (
 )
 
 type Series struct {
+	FieldName string
 	elements elements.Elements
 }
 
 func (se *Series) Copy() (newSeries *Series) {
 	newElements := se.elements.Copy()
-	newSeries = &Series{elements:newElements}
+	newSeries = &Series{
+		FieldName: se.FieldName,
+		elements:newElements,
+	}
 	return
 }
 
@@ -35,7 +39,10 @@ func (se *Series) Subset(index index.IndexInt) (newSeries *Series, err error) {
 	if err != nil {
 		err = fmt.Errorf("subset series error: %w", err)
 	}
-	newSeries = &Series{elements:newElements}
+	newSeries = &Series{
+		FieldName: se.FieldName,
+		elements:newElements,
+	}
 	return
 }
 
@@ -90,7 +97,7 @@ func NewCondition() *condition.Condition {
 	return condition.NewCondition(condition.ConditionTypeSeries)
 }
 
-func New(values interface{}) (se *Series) {
+func New(values interface{}, fieldName string) (se *Series) {
 	switch values.(type) {
 	case []int:
 		vals := values.([]int)
@@ -124,6 +131,8 @@ func New(values interface{}) (se *Series) {
 	default:
 
 	}
+
+	se.FieldName = fieldName
 
 	return se
 }

@@ -44,6 +44,28 @@ func TestDataFrameCondition(t *testing.T) {
 	condition := dataframe.NewCondition()
 	condition.Or(">", 2, "0")
 	condition.And("<", 9, "1")
+	ixs, e := df.IsCondition(condition)
+	fmt.Printf("%v %v\n", ixs, e)
+	newDataFrame, _ := df.Filter(condition)
+	fmt.Printf("%v\n", newDataFrame)
+	series, _ := newDataFrame.GetSeriesByColumn("0")
+	fmt.Printf("%v\n", series)
+}
+
+func TestDataFrameLightCondition(t *testing.T) {
+	dataInt := []int{
+		1,3,
+	}
+	dataInt2 := []int{
+		6,7,
+	}
+	seriesInt := se.New(dataInt, "")
+	seriesInt2 := se.New(dataInt2, "")
+
+	df, _ := dataframe.NewFromSeries(seriesInt, seriesInt2)
+	condition := dataframe.NewCondition()
+	condition.Or(">", int64(2), "0")
+	condition.And("<", int64(9), "1")
 	ixs, _ := df.IsCondition(condition)
 	fmt.Printf("%v\n", ixs)
 	newDataFrame, _ := df.Filter(condition)

@@ -32,9 +32,9 @@ type CondValue struct {
 	IsNot bool
 }
 
-func (condVal *CondValue) CompareInt(leftVal int) (compareResult bool, err error) {
+func (condVal *CondValue) CompareInt(leftVal int64) (compareResult bool, err error) {
 	item := condVal.CompItem
-	rightVal, ok := item.Value.(int)
+	rightVal, ok := item.Value.(int64)
 	if !ok {
 		err = errors.New(fmt.Sprintf("can't convert value %v to int", item.Value))
 		return
@@ -102,7 +102,26 @@ func (cond *Condition) String() string {
 	return condString
 }
 
+func checkGetValue(val interface{}) (value interface{}) {
+	switch val.(type) {
+	case int:
+		value = int64(val.(int))
+	case int8:
+		value = int64(val.(int8))
+	case int16:
+		value = int64(val.(int16))
+	case int32:
+		value = int64(val.(int32))
+	case float32:
+		value = float64(val.(float32))
+	default:
+		value = val
+	}
+	return
+}
+
 func (cond *Condition) And(comparator string, value interface{}, columns ...string) {
+	value = checkGetValue(value)
 	ast := cond.ast
 	var column string
 	if len(columns) > 0 {
@@ -135,6 +154,7 @@ func (cond *Condition) And(comparator string, value interface{}, columns ...stri
 }
 
 func (cond *Condition) Or(comparator string, value interface{}, columns ...string) {
+	value = checkGetValue(value)
 	ast := cond.ast
 	var column string
 	if len(columns) > 0 {

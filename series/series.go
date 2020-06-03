@@ -101,7 +101,12 @@ func New(values interface{}, fieldName string) (se *Series) {
 	switch values.(type) {
 	case []int:
 		vals := values.([]int)
-		newElements := sint.NewElementsInt(vals)
+		valsLen := len(vals)
+		vals64 := make([]int64, valsLen)
+		for i := 0; i < valsLen; i++ {
+			vals64[i] = int64(vals[i])
+		}
+		newElements := sint.NewElementsInt64(vals64)
 		se = &Series{elements:newElements}
 	case []int64:
 		vals := values.([]int64)

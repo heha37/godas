@@ -50,7 +50,7 @@ func (element ElementValue) Compare(cond *condition.CondValue) (result bool, err
 	} else {
 		switch element.Type {
 		case types.TypeInt:
-			leftVal := element.Value.(int)
+			leftVal := element.Value.(int64)
 			var e error
 			result, e = cond.CompareInt(leftVal)
 			if e != nil {

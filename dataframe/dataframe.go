@@ -34,6 +34,10 @@ func (df *DataFrame) Len() int {
 	return 0
 }
 
+func (df *DataFrame) FieldNum() int {
+	return len(df.fields)
+}
+
 func checkColumnsLengths(ses ...*series.Series) (rows, cols int, err error) {
 	cols = len(ses)
 	rows = -1
@@ -52,8 +56,8 @@ func checkColumnsLengths(ses ...*series.Series) (rows, cols int, err error) {
 }
 
 func (df *DataFrame) Subset(index index.IndexInt) (newDataFrame *DataFrame, err error) {
-	rowNum := df.Len()
-	ses := make([]*series.Series, rowNum)
+	columnNum := df.FieldNum()
+	ses := make([]*series.Series, columnNum)
 	for i, se := range df.nSeries {
 		newSeries, e := se.Subset(index)
 		if e != nil {

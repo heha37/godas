@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hunknownz/godas/internal/elements"
+	"github.com/hunknownz/godas/types"
 	"io"
 	"io/ioutil"
 	"reflect"
@@ -27,14 +28,14 @@ type DataFrame struct {
 	Err error
 }
 
-func (df *DataFrame) Len() int {
+func (df *DataFrame) NumRow() int {
 	if len(df.nSeries) != 0 {
 		return df.nSeries[0].Len()
 	}
 	return 0
 }
 
-func (df *DataFrame) FieldNum() int {
+func (df *DataFrame) NumColumn() int {
 	return len(df.fields)
 }
 
@@ -56,7 +57,7 @@ func checkColumnsLengths(ses ...*series.Series) (rows, cols int, err error) {
 }
 
 func (df *DataFrame) Subset(index index.IndexInt) (newDataFrame *DataFrame, err error) {
-	columnNum := df.FieldNum()
+	columnNum := df.NumColumn()
 	ses := make([]*series.Series, columnNum)
 	for i, se := range df.nSeries {
 		newSeries, e := se.Subset(index)
@@ -210,8 +211,19 @@ func (df *DataFrame) Filter(cond *condition.Condition) (newDataFrame *DataFrame,
 	return
 }
 
-func (df *DataFrame) At(rowLabel int, columnLabel string) (value elements.ElementValue, err error) {
-	i := df.fieldSeriesMap[columnLabel]
+func (df *DataFrame) At(rowLabel int, columnLabel interface{}) (value elements.ElementValue, err error) {
+	var i int
+	switch columnLabel.(type) {
+	case string:
+		columnLabelString := columnLabel.(string)
+		i = df.fieldSeriesMap[columnLabelString]
+	case int:
+		i = columnLabel.(int)
+	default:
+		typeString := reflect.TypeOf(columnLabel).Kind().String()
+		err = fmt.Errorf("type %s is not supported", typeString)
+	}
+
 	se := df.nSeries[i]
 	return se.At(rowLabel)
 }
@@ -295,12 +307,50 @@ func NewFromSeries(ses ...*series.Series) (df *DataFrame, err error) {
 		key := nSeries[i].FieldName
 		if key == "" {
 			key = strconv.Itoa(i)
+			nSeries[i].FieldName = "C" + key
 		}
 		df.fields[i] = key
 		df.fieldSeriesMap[key] = i
 	}
 
+	df.sourceType = generateAnonymousStructType(df)
+
 	return
+}
+
+func generateAnonymousStructType(df *DataFrame) reflect.Type {
+	columnNum := df.NumColumn()
+	structFields := make([]reflect.StructField, columnNum)
+
+	for i:=0; i < columnNum; i++ {
+		se := df.nSeries[i]
+		seType := se.Type()
+		var structField reflect.StructField
+		switch seType {
+		case types.TypeInt:
+			structField = reflect.StructField{
+				Name:      se.FieldName,
+				Type:      reflect.TypeOf(int64(0)),
+			}
+		case types.TypeBool:
+			structField = reflect.StructField{
+				Name:      se.FieldName,
+				Type:      reflect.TypeOf(true),
+			}
+		case types.TypeFloat:
+			structField = reflect.StructField{
+				Name:      se.FieldName,
+				Type:      reflect.TypeOf(float64(0)),
+			}
+		case types.TypeString:
+			structField = reflect.StructField{
+				Name:      se.FieldName,
+				Type:      reflect.TypeOf(""),
+			}
+		}
+		structFields[i] = structField
+	}
+	return reflect.StructOf(structFields)
 }
 
 func generateTypeSeries(valuesValue reflect.Value, fieldIndex int, valueType string, fieldName string, ptrFlag bool)(newSeries *series.Series) {
@@ -422,6 +472,50 @@ func NewFromStructs(values interface{}) (df *DataFrame, err error) {
 		err = fmt.Errorf("new dataframe from series error: %w", err)
 		return
 	}
+
+	df.sourceType = valueType
+	return
+}
+
+func (df *DataFrame) IndexStruct(rowLabel int) (rowStruct interface{}, err error) {
+	val := reflect.New(df.sourceType).Elem()
+	columnNum := df.NumColumn()
+	for i := 0; i < columnNum; i++ {
+		se := df.nSeries[i]
+		lValue := val.FieldByName(se.FieldName)
+		elem, e := se.At(rowLabel)
+		if e != nil {
+			err = fmt.Errorf("series at %d error: %w", rowLabel, e)
+			return
+		}
+		switch lValue.Type().Kind() {
+		case reflect.String:
+			rValue := elem.MustString()
+			lValue.SetString(rValue)
+		case reflect.Bool:
+			rValue := elem.MustBool()
+			lValue.SetBool(rValue)
+		case reflect.Int:
+			rValue := elem.MustInt()
+			lValue.SetInt(rValue)
+		case reflect.Int64:
+			rValue := elem.MustInt()
+			lValue.SetInt(rValue)
+		case reflect.Float64:
+			rValue := elem.MustFloat()
+			lValue.SetFloat(rValue)
+		}
+	}
+	rowStruct = val.Addr().Interface()
+	return
+}
+
+func (df *DataFrame) ToStructs() (structs []interface{}) {
+	rowNum := df.NumRow()
+	for i := 0; i < rowNum; i++ {
+		rowStruct, _ := df.IndexStruct(i)
+		structs = append(structs, rowStruct)
+	}
 	return
 }
 
@@ -453,5 +547,10 @@ func NewFromCSV(filepathOrBufferstr interface{}) (df *DataFrame, err error) {
 		df.fieldSeriesMap[header] = columnI
 		df.nSeries[columnI] = series.New(dataMap[header], header)
 	}
+
+	fmt.Printf("%v\n", df.nSeries)
+
+	df.sourceType = generateAnonymousStructType(df)
+
 	return
 }

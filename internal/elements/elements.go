@@ -24,6 +24,46 @@ func (element ElementValue) String() (string, error) {
 	return "", errors.New("type assertion to string failed")
 }
 
+func (element ElementValue) Bool() (bool, error) {
+	if s, ok := (element.Value).(bool); ok {
+		return s, nil
+	}
+	return false, errors.New("type assertion to bool failed")
+}
+
+func (element ElementValue) Int() (int64, error) {
+	if s, ok := (element.Value).(int64); ok {
+		return s, nil
+	}
+	return int64(0), errors.New("type assertion to int failed")
+}
+
+func (element ElementValue) Float() (float64, error) {
+	if s, ok := (element.Value).(float64); ok {
+		return s, nil
+	}
+	return float64(0), errors.New("type assertion to float failed")
+}
+
+func (element ElementValue) MustBool(args ...bool) bool {
+	var def bool
+
+	switch len(args) {
+	case 0:
+	case 1:
+		def = args[0]
+	default:
+		log.Panicf("MustBool() received too many arguments %d", len(args))
+	}
+
+	s, err := element.Bool()
+	if err == nil {
+		return s
+	}
+
+	return def
+}
+
 func (element ElementValue) MustString(args ...string) string {
 	var def string
 
@@ -36,6 +76,44 @@ func (element ElementValue) MustString(args ...string) string {
 	}
 
 	s, err := element.String()
+	if err == nil {
+		return s
+	}
+
+	return def
+}
+
+func (element ElementValue) MustInt(args ...int64) int64 {
+	var def int64
+
+	switch len(args) {
+	case 0:
+	case 1:
+		def = args[0]
+	default:
+		log.Panicf("MustInt() received too many arguments %d", len(args))
+	}
+
+	s, err := element.Int()
+	if err == nil {
+		return s
+	}
+
+	return def
+}
+
+func (element ElementValue) MustFloat(args ...float64) float64 {
+	var def float64
+
+	switch len(args) {
+	case 0:
+	case 1:
+		def = args[0]
+	default:
+		log.Panicf("MustFloat() received too many arguments %d", len(args))
+	}
+
+	s, err := element.Float()
 	if err == nil {
 		return s
 	}

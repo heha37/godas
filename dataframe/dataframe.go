@@ -369,7 +369,7 @@ func generateTypeSeries(valuesValue reflect.Value, fieldIndex int, valueType str
 
 			elements[i] = val.Float()
 		}
-		newSeries = series.New(elements, fieldName)
+		newSeries, _ = series.New(elements, fieldName)
 	case "int8", "int16", "int", "int32", "int64":
 		elements := make([]int64, seriesLen)
 		for i := 0; i < seriesLen; i++ {
@@ -382,7 +382,7 @@ func generateTypeSeries(valuesValue reflect.Value, fieldIndex int, valueType str
 
 			elements[i] = val.Int()
 		}
-		newSeries = series.New(elements, fieldName)
+		newSeries, _ = series.New(elements, fieldName)
 	case "string":
 		elements := make([]string, seriesLen)
 		for i := 0; i < seriesLen; i++ {
@@ -395,7 +395,7 @@ func generateTypeSeries(valuesValue reflect.Value, fieldIndex int, valueType str
 
 			elements[i] = val.String()
 		}
-		newSeries = series.New(elements, fieldName)
+		newSeries, _ = series.New(elements, fieldName)
 	case "bool":
 		elements := make([]bool, seriesLen)
 		for i := 0; i < seriesLen; i++ {
@@ -408,7 +408,20 @@ func generateTypeSeries(valuesValue reflect.Value, fieldIndex int, valueType str
 
 			elements[i] = val.Bool()
 		}
-		newSeries = series.New(elements, fieldName)
+		newSeries, _ = series.New(elements, fieldName)
+	default:
+		elements := make([]interface{}, seriesLen)
+		for i := 0; i < seriesLen; i++ {
+			var val reflect.Value
+			if ptrFlag {
+				val = valuesValue.Index(i).Elem().Field(fieldIndex)
+			} else {
+				val = valuesValue.Index(i).Field(fieldIndex)
+			}
+
+			elements[i] = val.Interface()
+		}
+		newSeries, _ = series.New(elements, fieldName)
 	}
 	return
 }
@@ -504,6 +517,10 @@ func (df *DataFrame) IndexStruct(rowLabel int) (rowStruct interface{}, err error
 		case reflect.Float64:
 			rValue := elem.MustFloat()
 			lValue.SetFloat(rValue)
+		default:
+			rValue := elem.MustInterface()
+			v := reflect.ValueOf(rValue)
+			lValue.Set(v)
 		}
 	}
 	rowStruct = val.Addr().Interface()
@@ -545,10 +562,8 @@ func NewFromCSV(filepathOrBufferstr interface{}) (df *DataFrame, err error) {
 	}
 	for columnI, header := range headers {
 		df.fieldSeriesMap[header] = columnI
-		df.nSeries[columnI] = series.New(dataMap[header], header)
+		df.nSeries[columnI], _ = series.New(dataMap[header], header)
 	}
-
-	fmt.Printf("%v\n", df.nSeries)
 
 	df.sourceType = generateAnonymousStructType(df)
 

@@ -80,7 +80,6 @@ func (elements ElementsBool) IsNaN() []bool {
 	}
 	return nanElements
 }
-
 func (elements ElementsBool) Location(coord int) (element elements.ElementValue, err error) {
 	val, err := elements.location(coord)
 	if err != nil {

@@ -45,6 +45,13 @@ func (element ElementValue) Float() (float64, error) {
 	return float64(0), errors.New("type assertion to float failed")
 }
 
+func (element ElementValue) Interface() (interface{}, error) {
+	if s, ok := (element.Value).(interface{}); ok {
+		return s, nil
+	}
+	return interface{}(nil), errors.New("type assertion to object faile")
+}
+
 func (element ElementValue) MustBool(args ...bool) bool {
 	var def bool
 
@@ -114,6 +121,25 @@ func (element ElementValue) MustFloat(args ...float64) float64 {
 	}
 
 	s, err := element.Float()
+	if err == nil {
+		return s
+	}
+
+	return def
+}
+
+func (element ElementValue) MustInterface(args ...interface{}) interface{} {
+	var def interface{}
+
+	switch len(args) {
+	case 0:
+	case 1:
+		def = args[0]
+	default:
+		log.Panicf("MustInterface() received too many arguments %d", len(args))
+	}
+
+	s, err := element.Interface()
 	if err == nil {
 		return s
 	}

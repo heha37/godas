@@ -2,6 +2,8 @@ package series
 
 import (
 	"fmt"
+	"reflect"
+	"errors"
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/condition"
 	"github.com/hunknownz/godas/internal/elements"
@@ -9,6 +11,7 @@ import (
 	sint "github.com/hunknownz/godas/internal/elements_int"
 	sstring "github.com/hunknownz/godas/internal/elements_string"
 	sfloat "github.com/hunknownz/godas/internal/elements_float"
+	sobject "github.com/hunknownz/godas/internal/elements_object"
 	"github.com/hunknownz/godas/types"
 )
 
@@ -97,7 +100,7 @@ func NewCondition() *condition.Condition {
 	return condition.NewCondition(condition.ConditionTypeSeries)
 }
 
-func New(values interface{}, fieldName string) (se *Series) {
+func New(values interface{}, fieldName string) (se *Series, err error) {
 	switch values.(type) {
 	case []int:
 		vals := values.([]int)
@@ -133,11 +136,17 @@ func New(values interface{}, fieldName string) (se *Series) {
 		vals := values.([]float64)
 		newElements := sfloat.NewElementsFloat64(vals)
 		se = &Series{elements:newElements}
+	case []interface{}:
+		vals := values.([]interface{})
+		newElements := sobject.NewElementsObject(vals)
+		se = &Series{elements:newElements}
 	default:
-
+		typ := reflect.TypeOf(values).Kind().String()
+		err = errors.New(fmt.Sprintf("new series errors: type %s is not supported", typ))
+		return
 	}
 
 	se.FieldName = fieldName
 
-	return se
+	return
 }

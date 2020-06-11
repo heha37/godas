@@ -72,3 +72,7 @@ func (elements ElementsFloat64) Location(coord int) (element elements.ElementVal
 	element.Type = types.TypeFloat
 	return
 }
+
+func (elements ElementsFloat64) Swap(i, j int) {
+	elements[i], elements[j] = elements[j], elements[i]
+}

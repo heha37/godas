@@ -74,3 +74,7 @@ func (elements ElementsString) Location(coord int) (element elements.ElementValu
 	element.Type = types.TypeString
 	return
 }
+
+func (elements ElementsString) Swap(i, j int) {
+	elements[i], elements[j] = elements[j], elements[i]
+}

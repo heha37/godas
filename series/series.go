@@ -1,18 +1,19 @@
 package series
 
 import (
-	"fmt"
-	"reflect"
 	"errors"
+	"fmt"
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/condition"
 	"github.com/hunknownz/godas/internal/elements"
 	sbool "github.com/hunknownz/godas/internal/elements_bool"
-	sint "github.com/hunknownz/godas/internal/elements_int"
-	sstring "github.com/hunknownz/godas/internal/elements_string"
 	sfloat "github.com/hunknownz/godas/internal/elements_float"
+	sint "github.com/hunknownz/godas/internal/elements_int"
 	sobject "github.com/hunknownz/godas/internal/elements_object"
+	sstring "github.com/hunknownz/godas/internal/elements_string"
+	"github.com/hunknownz/godas/order"
 	"github.com/hunknownz/godas/types"
+	"reflect"
 )
 
 type Series struct {
@@ -98,6 +99,83 @@ func (se *Series) At(coord int) (value elements.ElementValue, err error) {
 
 func NewCondition() *condition.Condition {
 	return condition.NewCondition(condition.ConditionTypeSeries)
+}
+
+func (se *Series) NewIntLessFunc(f order.IntLessFunc) order.LessFunc {
+	elements := se.elements.(sint.ElementsInt64)
+	return func(i, j int) bool {
+		return f(elements[i], elements[j])
+	}
+}
+
+func (se *Series) defaultIntLessFunc() order.LessFunc {
+	elements := se.elements.(sint.ElementsInt64)
+	return func(i, j int) bool {
+		return elements[i] < elements[j]
+	}
+}
+
+func (se *Series) NewFloatLessFunc(f order.FloatLessFunc) order.LessFunc {
+	elements := se.elements.(sfloat.ElementsFloat64)
+	return func(i, j int) bool {
+		return f(elements[i], elements[j])
+	}
+}
+
+func (se *Series) NewStringLessFunc(f order.StringLessFunc) order.LessFunc {
+	elements := se.elements.(sstring.ElementsString)
+	return func(i, j int) bool {
+		return f(elements[i], elements[j])
+	}
+}
+
+func (se *Series) NewBoolLessFunc(f order.BoolLessFunc) order.LessFunc {
+	elements := se.elements.(sbool.ElementsBool)
+	return func(i, j int) bool {
+		a, _ := elements.Location(i)
+		b, _ := elements.Location(j)
+		return f(a.MustBool(), b.MustBool())
+	}
+}
+
+func (se *Series) defaultBoolLessFunc() order.LessFunc {
+	elements := se.elements.(sbool.ElementsBool)
+	return func(i, j int) bool {
+		a, _ := elements.Location(i)
+		b, _ := elements.Location(j)
+		aValue := a.MustBool()
+		bValue := b.MustBool()
+		return !aValue && bValue
+	}
+}
+
+func (se *Series) Sort(inPlace bool, ascending bool, orderBy ...order.LessFunc) (newSe *Series, err error) {
+	if inPlace {
+		newSe = se
+	} else {
+		newSe = &Series{
+			FieldName: se.FieldName,
+			elements:  se.elements,
+		}
+		se.elements = se.elements.Copy()
+	}
+
+	var f order.LessFunc
+	if len(orderBy) > 0 {
+		f = orderBy[0]
+	} else {
+		typ := newSe.Type()
+		switch typ {
+		case types.TypeInt:
+			f = newSe.defaultIntLessFunc()
+		case types.TypeBool:
+			f = newSe.defaultBoolLessFunc()
+		}
+	}
+	sorter := newSeriesSorter(newSe, ascending, f)
+	sorter.Sort()
+
+	return
 }
 
 func New(values interface{}, fieldName string) (se *Series, err error) {

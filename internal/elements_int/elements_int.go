@@ -3,11 +3,10 @@ package elements_int
 import (
 	"errors"
 	"fmt"
-	"math"
-
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
 	"github.com/hunknownz/godas/types"
+	"math"
 )
 
 type ElementInt64 = int64
@@ -75,4 +74,8 @@ func (elements ElementsInt64) Location(coord int) (element elements.ElementValue
 	element.Value = elements[coord]
 	element.Type = types.TypeInt
 	return
+}
+
+func (elements ElementsInt64) Swap(i, j int) {
+	elements[i], elements[j] = elements[j], elements[i]
 }

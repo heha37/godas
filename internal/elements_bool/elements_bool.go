@@ -174,3 +174,10 @@ func (elements ElementsBool) set(coord int, value bitBoolValue) (err error){
 	elements.bits[chunkI] = chunk
 	return
 }
+
+func (elements ElementsBool) Swap(i, j int) {
+	aValue, _ := elements.location(i)
+	bValue, _ := elements.location(j)
+	elements.set(i, bValue)
+	elements.set(j, aValue)
+}

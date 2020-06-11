@@ -213,5 +213,6 @@ type Elements interface {
 	Subset(index.IndexInt) (newElements Elements, err error)
 	IsNaN() []bool
 	Location(int) (ElementValue, error)
+	Swap(i, j int)
 }
 

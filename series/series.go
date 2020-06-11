@@ -178,6 +178,10 @@ func (se *Series) Sort(inPlace bool, ascending bool, orderBy ...order.LessFunc) 
 	return
 }
 
+func (se *Series) Swap(i, j int) {
+	se.elements.Swap(i, j)
+}
+
 func New(values interface{}, fieldName string) (se *Series, err error) {
 	switch values.(type) {
 	case []int:

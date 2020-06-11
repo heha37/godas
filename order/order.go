@@ -3,6 +3,7 @@ package order
 type SortKey struct {
 	Column string
 	Ascending bool
+	LessFunc LessFunc
 }
 
 type LessFunc func(i, j int) bool

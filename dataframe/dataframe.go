@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hunknownz/godas/internal/elements"
+	"github.com/hunknownz/godas/order"
 	"github.com/hunknownz/godas/types"
 	"io"
 	"io/ioutil"
@@ -128,14 +129,19 @@ func (df *DataFrame) Select(columns SelectionColumns) (newDataFrame *DataFrame, 
 	return
 }
 
-func (df *DataFrame) GetSeriesByColumn(column string) (newSeries *series.Series, err error) {
+func (df *DataFrame) getOriginSeriesByColumn(column string) (se *series.Series, err error) {
 	ok, _ := utils.ArrayContain(df.fields, column)
 	if !ok {
 		err = errors.New(fmt.Sprintf("column name %q not found", column))
 		return
 	}
-	oldSeriesI := df.fieldSeriesMap[column]
-	oldSeries := df.nSeries[oldSeriesI]
+	seI := df.fieldSeriesMap[column]
+	se = df.nSeries[seI]
+	return
+}
+
+func (df *DataFrame) GetSeriesByColumn(column string) (newSeries *series.Series, err error) {
+	oldSeries, err := df.getOriginSeriesByColumn(column)
 	newSeries = oldSeries.Copy()
 	return
 }
@@ -209,6 +215,27 @@ func (df *DataFrame) Filter(cond *condition.Condition) (newDataFrame *DataFrame,
 		return
 	}
 	return
+}
+
+func (df *DataFrame) Sort(inplace bool, sortKeys ...order.SortKey) (newDataFrame *DataFrame, err error) {
+	if inplace {
+		newDataFrame = df
+	} else {
+	}
+
+	sorter, err := newDataframeSorter(df, sortKeys...)
+	if err != nil {
+		err = fmt.Errorf("sort error: %w", err)
+	}
+	sorter.Sort()
+	return
+}
+
+func (df *DataFrame) Swap(i, j int) {
+	colNum := df.NumColumn()
+	for col := 0; col < colNum; col++ {
+		df.nSeries[col].Swap(i, j)
+	}
 }
 
 func (df *DataFrame) At(rowLabel int, columnLabel interface{}) (value elements.ElementValue, err error) {

@@ -6,6 +6,7 @@ import (
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
 	"github.com/hunknownz/godas/types"
+	"reflect"
 )
 
 type ElementString = string
@@ -77,4 +78,29 @@ func (elements ElementsString) Location(coord int) (element elements.ElementValu
 
 func (elements ElementsString) Swap(i, j int) {
 	elements[i], elements[j] = elements[j], elements[i]
+}
+
+func (elements ElementsString) Append(copy bool, values ...interface{}) (newElements elements.Elements, err error) {
+	var nElements ElementsString
+	if !copy {
+		nElements = elements
+	} else {
+		nElements = elements.Copy().(ElementsString)
+	}
+
+	for _, value := range values {
+		kind := reflect.TypeOf(value).Kind()
+		if kind != reflect.String {
+			err = errors.New(fmt.Sprintf("string elements can't append %s", kind.String()))
+			return
+		}
+	}
+
+	for _, value := range values {
+		val := value.(string)
+		nElements = append(nElements, val)
+	}
+	newElements = nElements
+
+	return
 }

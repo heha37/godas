@@ -6,6 +6,8 @@ import (
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
 	"github.com/hunknownz/godas/types"
+	"github.com/hunknownz/godas/utils"
+	"reflect"
 )
 
 type ElementsBool = BitBools
@@ -150,9 +152,9 @@ func (elements ElementsBool) set(coord int, value bitBoolValue) (err error){
 		err = errors.New(fmt.Sprintf("invalid index %d (index must be non-negative)", coord))
 		return
 	}
-	boolsLen := elements.bitBoolsLen()
-	if coord >= boolsLen {
-		err = errors.New(fmt.Sprintf("invalid index %d (out of bounds for %d-element container)", coord, boolsLen))
+	boolsMaxLen := elements.bitsSliceLen << 4
+	if coord >= int(boolsMaxLen) {
+		err = errors.New(fmt.Sprintf("invalid index %d (out of bounds for %d-element container)", coord, boolsMaxLen))
 		return
 	}
 
@@ -180,4 +182,46 @@ func (elements ElementsBool) Swap(i, j int) {
 	bValue, _ := elements.location(j)
 	elements.set(i, bValue)
 	elements.set(j, aValue)
+}
+
+func (elements ElementsBool) Append(copy bool, values ...interface{}) (newElements elements.Elements, err error) {
+	var nElements ElementsBool
+	if !copy {
+		nElements = elements
+	} else {
+		nElements = elements.Copy().(ElementsBool)
+	}
+
+	for _, value := range values {
+		kind := reflect.TypeOf(value).Kind()
+		if kind != reflect.Bool {
+			err = errors.New(fmt.Sprintf("bool elements can't append %s", kind.String()))
+			return
+		}
+	}
+
+	oldElementsLen := elements.Len()
+	oldBitsSliceLen := elements.bitsSliceLen
+	boolSliceLen := uint32(oldElementsLen + len(values))
+	newBitsSliceLen := boolSliceLen >> 4
+	if (newBitsSliceLen << 4) != boolSliceLen {
+		newBitsSliceLen = newBitsSliceLen + 1
+	}
+
+	if newBitsSliceLen > oldBitsSliceLen {
+		diff := newBitsSliceLen - oldBitsSliceLen
+		for i:=0; i<int(diff); i++ {
+			nElements.bits = append(nElements.bits, chunkNullValue)
+		}
+		nElements.bitsSliceLen = newBitsSliceLen
+	}
+
+	for i, value := range values {
+		bValue := value.(bool)
+		boolValue := utils.If(bValue == true, trueValue, falseValue)
+		nElements.set(i+oldElementsLen, boolValue.(bitBoolValue))
+	}
+	newElements = nElements
+
+	return
 }

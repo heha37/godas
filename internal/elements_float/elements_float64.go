@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
@@ -75,4 +76,35 @@ func (elements ElementsFloat64) Location(coord int) (element elements.ElementVal
 
 func (elements ElementsFloat64) Swap(i, j int) {
 	elements[i], elements[j] = elements[j], elements[i]
+}
+
+func (elements ElementsFloat64) Append(copy bool, values ...interface{}) (newElements elements.Elements, err error) {
+	var nElements ElementsFloat64
+	if !copy {
+		nElements = elements
+	} else {
+		nElements = elements.Copy().(ElementsFloat64)
+	}
+
+	for _, value := range values {
+		kind := reflect.TypeOf(value).Kind()
+		if kind != reflect.Float32 && kind != reflect.Float64 {
+			err = errors.New(fmt.Sprintf("float elements can't append %s", kind.String()))
+			return
+		}
+	}
+
+	for _, value := range values {
+		switch value.(type) {
+		case float32:
+			val := value.(float32)
+			nElements = append(nElements, float64(val))
+		case float64:
+			val := value.(float64)
+			nElements = append(nElements, val)
+		}
+	}
+	newElements = nElements
+
+	return
 }

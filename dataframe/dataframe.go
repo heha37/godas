@@ -50,10 +50,23 @@ func checkColumnsLengths(ses ...*series.Series) (rows, cols int, err error) {
 	rows = ses[0].Len()
 	for i:=1; i<cols; i++ {
 		if rows != ses[i].Len() {
-			err = errors.New("elements_int must all be same length")
+			err = errors.New("elements must all be same length")
 			return
 		}
 	}
+	return
+}
+
+func (df *DataFrame) checkSeriesLengths(ses ...*series.Series) (err error) {
+	cols := len(ses)
+	rows := df.NumRow()
+	for i:=0; i<cols; i++ {
+		if rows != ses[i].Len() {
+			err = errors.New("series must all be same length with dataframe")
+			return
+		}
+	}
+
 	return
 }
 
@@ -146,6 +159,176 @@ func (df *DataFrame) GetSeriesByColumn(column string) (newSeries *series.Series,
 	return
 }
 
+func (df *DataFrame) Copy() (newDataFrame *DataFrame) {
+	newDataFrame, _ = NewFromSeries(df.nSeries...)
+	return
+}
+
+// AssignSeries assigns new columns to a DataFrame by series.
+func (df *DataFrame) AssignSeries(inplace bool, ses ...*series.Series) (newDataFrame *DataFrame, err error) {
+	err = df.checkSeriesLengths(ses...)
+	if err != nil {
+		err = fmt.Errorf("assign dataframe error: %w", err)
+		return
+	}
+
+	if inplace {
+		newDataFrame = df
+	} else {
+		newDataFrame = df.Copy()
+	}
+
+	for _, se := range ses {
+		newSe := se.Copy()
+		newDataFrame.nSeries = append(newDataFrame.nSeries, newSe)
+		i := len(newDataFrame.nSeries) - 1
+		key := newSe.FieldName
+		if key == "" {
+			key = strconv.Itoa(i)
+			newSe.FieldName = "C" + key
+		}
+		newDataFrame.fields = append(newDataFrame.fields, key)
+		newDataFrame.fieldSeriesMap[key] = i
+	}
+
+	return
+}
+
+func (df *DataFrame) appendMapLikeObject(values map[string]interface{}) {
+	for key, value := range values {
+		i := df.fieldSeriesMap[key]
+		se := df.nSeries[i]
+
+		switch value.(type) {
+		case []int:
+			val := value.([]int)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []int8:
+			val := value.([]int8)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []int16:
+			val := value.([]int16)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []int32:
+			val := value.([]int32)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []float32:
+			val := value.([]float32)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []float64:
+			val := value.([]float64)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []string:
+			val := value.([]string)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []bool:
+			val := value.([]bool)
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		case []interface{}:
+			val := value.([]interface{})
+			for _, v := range val {
+				se.Append(false, v)
+			}
+		}
+	}
+	return
+}
+
+func (df *DataFrame) checkAppendMapLikeRecords(values map[string]interface{}) (err error) {
+	for key, value := range values {
+		i, ok := df.fieldSeriesMap[key]
+		if !ok {
+			err = errors.New(fmt.Sprintf("field %s is not in the dataframe", key))
+			return
+		}
+
+		se := df.nSeries[i]
+		typ := se.Type()
+		switch value.(type) {
+		case []int, []int8, []int16, []int32, []int64:
+			if typ != types.TypeInt {
+				err = errors.New(fmt.Sprintf("can't append int value to %s series", typ))
+				return
+			}
+		case []float32, []float64:
+			if typ != types.TypeFloat {
+				err = errors.New(fmt.Sprintf("can't append float value to %s series", typ))
+				return
+			}
+		case []string:
+			if typ != types.TypeString {
+				err = errors.New(fmt.Sprintf("can't append string value to %s series", typ))
+				return
+			}
+		case []bool:
+			if typ != types.TypeBool {
+				err = errors.New(fmt.Sprintf("can't append bool value to %s series", typ))
+				return
+			}
+		case []interface{}:
+			if typ != types.TypeObject {
+				err = errors.New(fmt.Sprintf("can't append object value to %s series", typ))
+				return
+			}
+		default:
+			valueType := reflect.TypeOf(value).Kind().String()
+			err = errors.New(fmt.Sprintf("type %s is not supported in this dataframe", valueType))
+		}
+	}
+
+	return
+}
+
+func (df *DataFrame) Append(copy bool, records ...interface{}) (newDataFrame *DataFrame, err error) {
+	if !copy {
+		newDataFrame = df
+	} else {
+		newDataFrame = df.Copy()
+	}
+
+	for _, record := range records {
+		switch record.(type) {
+		case map[string]interface{}:
+			val := record.(map[string]interface{})
+			err = newDataFrame.checkAppendMapLikeRecords(val)
+			if err != nil {
+				err = fmt.Errorf("append error: %w", err)
+				return
+			}
+		default:
+			typ := reflect.TypeOf(record).Kind().String()
+			err = errors.New(fmt.Sprintf("append error: %s type is not supperted to append", typ))
+			return
+		}
+	}
+
+	for _, record := range records {
+		switch record.(type) {
+		case map[string]interface{}:
+			val := record.(map[string]interface{})
+			newDataFrame.appendMapLikeObject(val)
+		}
+	}
+
+	return
+}
+
 func (df *DataFrame) evaluateCondition(expr condition.ExprAST) index.IndexBool {
 	var l, r index.IndexBool
 	switch expr.(type) {
@@ -221,6 +404,7 @@ func (df *DataFrame) Sort(inplace bool, sortKeys ...order.SortKey) (newDataFrame
 	if inplace {
 		newDataFrame = df
 	} else {
+		newDataFrame = df.Copy()
 	}
 
 	sorter, err := newDataframeSorter(df, sortKeys...)

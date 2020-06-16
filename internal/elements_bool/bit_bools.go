@@ -1,7 +1,7 @@
 package elements_bool
 
 const (
-	chunkSize = 32
+	chunkSize = 16
 
 	chunkNullValue = uint32(0xAAAAAAAA)
 )
@@ -14,7 +14,7 @@ const (
 	trueValue
 )
 
-var bitMasks = [32]uint32{
+var bitMasks = [16]uint32{
 	0xC0000000,
 	0x30000000,
 	0x0C000000,
@@ -33,7 +33,7 @@ var bitMasks = [32]uint32{
 	0x00000003,
 }
 
-var bitNaNMasks = [32]uint32{
+var bitNaNMasks = [16]uint32{
 	0x40000000,
 	0x10000000,
 	0x04000000,
@@ -52,7 +52,7 @@ var bitNaNMasks = [32]uint32{
 	0x00000001,
 }
 
-var bitNullMasks = [32]uint32{
+var bitNullMasks = [16]uint32{
 	0x80000000,
 	0x20000000,
 	0x08000000,

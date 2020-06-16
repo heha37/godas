@@ -182,6 +182,51 @@ func (se *Series) Swap(i, j int) {
 	se.elements.Swap(i, j)
 }
 
+func (se *Series) Append(copy bool, records ...interface{}) (newSe *Series, err error) {
+	if !copy {
+		newSe = se
+	} else {
+		newSe = se.Copy()
+	}
+
+	seType := se.Type()
+	for _, record := range records {
+		kind := reflect.TypeOf(record).Kind()
+		switch kind {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if seType != types.TypeInt {
+				err = errors.New(fmt.Sprintf("%s series can't append %s value", types.TypeInt, kind.String()))
+				return
+			}
+		case reflect.Float32, reflect.Float64:
+			if seType != types.TypeFloat {
+				err = errors.New(fmt.Sprintf("%s series can't append %s value", types.TypeFloat, kind.String()))
+				return
+			}
+		case reflect.String:
+			if seType != types.TypeString {
+				err = errors.New(fmt.Sprintf("%s series can't append %s value", types.TypeString, kind.String()))
+				return
+			}
+		case reflect.Bool:
+			if seType != types.TypeBool {
+				err = errors.New(fmt.Sprintf("%s series can't append %s value", types.TypeBool, kind.String()))
+				return
+			}
+		case reflect.Interface:
+			if seType != types.TypeObject {
+				err = errors.New(fmt.Sprintf("%s series can't append %s value", types.TypeObject, kind.String()))
+				return
+			}
+		default:
+			err = errors.New(fmt.Sprintf("%s is not supported to append", kind.String()))
+		}
+	}
+
+	newSe.elements, _ = newSe.elements.Append(copy, records...)
+	return
+}
+
 func New(values interface{}, fieldName string) (se *Series, err error) {
 	switch values.(type) {
 	case []int:

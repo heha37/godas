@@ -6,6 +6,7 @@ import (
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
 	"github.com/hunknownz/godas/types"
+	"reflect"
 )
 
 type ElementObject = interface{}
@@ -100,4 +101,27 @@ func (elements ElementsObject) Location(coord int) (element elements.ElementValu
 
 func (elements ElementsObject) Swap(i, j int) {
 	elements.items[i], elements.items[j] = elements.items[j], elements.items[i]
+}
+
+func (elements ElementsObject) Append(copy bool, values ...interface{}) (newElements elements.Elements, err error) {
+	var nElements ElementsObject
+	if !copy {
+		nElements = elements
+	} else {
+		nElements = elements.Copy().(ElementsObject)
+	}
+
+	for _, value := range values {
+		kind := reflect.TypeOf(value).Kind()
+		if kind != reflect.Interface {
+			err = errors.New(fmt.Sprintf("object elements can't append %s", kind.String()))
+			return
+		}
+	}
+
+	nElements.items = append(nElements.items, values...)
+	nElements.itemsLen = nElements.itemsLen + len(values)
+	newElements = nElements
+
+	return
 }

@@ -214,5 +214,5 @@ type Elements interface {
 	IsNaN() []bool
 	Location(int) (ElementValue, error)
 	Swap(i, j int)
+	Append(copy bool, values ...interface{}) (newElements Elements, err error)
 }
-

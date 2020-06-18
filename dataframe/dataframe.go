@@ -139,6 +139,7 @@ func (df *DataFrame) Select(columns SelectionColumns) (newDataFrame *DataFrame, 
 		fields:         fields,
 		fieldSeriesMap: fieldSeriesMap,
 	}
+	newDataFrame.sourceType = generateAnonymousStructType(newDataFrame)
 	return
 }
 
@@ -190,6 +191,7 @@ func (df *DataFrame) AssignSeries(inplace bool, ses ...*series.Series) (newDataF
 		newDataFrame.fields = append(newDataFrame.fields, key)
 		newDataFrame.fieldSeriesMap[key] = i
 	}
+	newDataFrame.sourceType = generateAnonymousStructType(newDataFrame)
 
 	return
 }

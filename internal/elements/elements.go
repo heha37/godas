@@ -3,8 +3,8 @@ package elements
 import (
 	"errors"
 	"fmt"
+	"github.com/hunknownz/godas/condition"
 	"github.com/hunknownz/godas/index"
-	"github.com/hunknownz/godas/internal/condition"
 	"github.com/hunknownz/godas/types"
 	"log"
 )

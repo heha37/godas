@@ -7,7 +7,7 @@ type (
 	}
 	node struct {
 		value ExprAST
-		prev *node
+		prev  *node
 	}
 )
 

@@ -142,7 +142,7 @@ func (cond *Condition) And(comparator string, value interface{}, columns ...stri
 		CompItem: cmp,
 	}
 	tokenLiteral := &condToken{
-		cond: condVal,
+		cond:      condVal,
 		tokenType: tokenLiteral,
 	}
 	ast.tokens = append(ast.tokens, tokenLiteral)
@@ -176,7 +176,7 @@ func (cond *Condition) Or(comparator string, value interface{}, columns ...strin
 		CompItem: cmp,
 	}
 	tokenLiteral := &condToken{
-		cond: condVal,
+		cond:      condVal,
 		tokenType: tokenLiteral,
 	}
 	ast.tokens = append(ast.tokens, tokenLiteral)

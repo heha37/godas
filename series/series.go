@@ -3,8 +3,8 @@ package series
 import (
 	"errors"
 	"fmt"
+	"github.com/hunknownz/godas/condition"
 	"github.com/hunknownz/godas/index"
-	"github.com/hunknownz/godas/internal/condition"
 	"github.com/hunknownz/godas/internal/elements"
 	sbool "github.com/hunknownz/godas/internal/elements_bool"
 	sfloat "github.com/hunknownz/godas/internal/elements_float"

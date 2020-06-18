@@ -11,8 +11,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/hunknownz/godas/condition"
 	"github.com/hunknownz/godas/index"
-	"github.com/hunknownz/godas/internal/condition"
 	gio "github.com/hunknownz/godas/internal/io"
 	"github.com/hunknownz/godas/series"
 	"github.com/hunknownz/godas/utils"

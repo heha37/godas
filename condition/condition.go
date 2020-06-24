@@ -120,7 +120,7 @@ func checkGetValue(val interface{}) (value interface{}) {
 	return
 }
 
-func (cond *Condition) And(comparator string, value interface{}, columns ...string) {
+func (cond *Condition) And(comparator string, value interface{}, columns ...string) *Condition {
 	value = checkGetValue(value)
 	ast := cond.ast
 	var column string
@@ -139,7 +139,9 @@ func (cond *Condition) And(comparator string, value interface{}, columns ...stri
 		Value:      value,
 	}
 	condVal := &CondValue{
+		Cond: nil,
 		CompItem: cmp,
+		IsNot: false,
 	}
 	tokenLiteral := &condToken{
 		cond:      condVal,
@@ -151,9 +153,11 @@ func (cond *Condition) And(comparator string, value interface{}, columns ...stri
 		ast.curIndex = 0
 		ast.curToken = ast.tokens[ast.curIndex]
 	}
+
+	return cond
 }
 
-func (cond *Condition) Or(comparator string, value interface{}, columns ...string) {
+func (cond *Condition) Or(comparator string, value interface{}, columns ...string) *Condition {
 	value = checkGetValue(value)
 	ast := cond.ast
 	var column string
@@ -173,7 +177,9 @@ func (cond *Condition) Or(comparator string, value interface{}, columns ...strin
 		Value:      value,
 	}
 	condVal := &CondValue{
+		Cond: nil,
 		CompItem: cmp,
+		IsNot: false,
 	}
 	tokenLiteral := &condToken{
 		cond:      condVal,
@@ -185,6 +191,62 @@ func (cond *Condition) Or(comparator string, value interface{}, columns ...strin
 		ast.curIndex = 0
 		ast.curToken = ast.tokens[ast.curIndex]
 	}
+
+	return cond
+}
+
+func (cond *Condition) AndCond(otherCond *Condition) *Condition {
+	ast := cond.ast
+	if ast.curIndex != -1 {
+		tokenOperator := &condToken{
+			tokenType: tokenOperatorAnd,
+		}
+		ast.tokens = append(ast.tokens, tokenOperator)
+	}
+
+	condVal := &CondValue{
+		Cond: otherCond,
+		CompItem: nil,
+		IsNot: false,
+	}
+	tokenLiteral := &condToken{
+		cond:      condVal,
+		tokenType: tokenLiteral,
+	}
+	ast.tokens = append(ast.tokens, tokenLiteral)
+
+	if ast.curIndex == -1 {
+		ast.curIndex = 0
+		ast.curToken = ast.tokens[ast.curIndex]
+	}
+	return cond
+}
+
+func (cond *Condition) OrCond(otherCond *Condition) *Condition {
+	ast := cond.ast
+	if ast.curIndex != -1 {
+		tokenOperator := &condToken{
+			tokenType: tokenOperatorOr,
+		}
+		ast.tokens = append(ast.tokens, tokenOperator)
+	}
+
+	condVal := &CondValue{
+		Cond: otherCond,
+		CompItem: nil,
+		IsNot: false,
+	}
+	tokenLiteral := &condToken{
+		cond:      condVal,
+		tokenType: tokenLiteral,
+	}
+	ast.tokens = append(ast.tokens, tokenLiteral)
+
+	if ast.curIndex == -1 {
+		ast.curIndex = 0
+		ast.curToken = ast.tokens[ast.curIndex]
+	}
+	return cond
 }
 
 func (cond *Condition) Prepare() ExprAST {

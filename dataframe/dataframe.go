@@ -348,6 +348,10 @@ func (df *DataFrame) evaluateCondition(expr condition.ExprAST) index.IndexBool {
 		}
 	case condition.ValueExprAST:
 		cond := expr.(condition.ValueExprAST).Value
+		if cond.Cond != nil {
+			nextExpr := cond.Cond.Prepare()
+			return df.evaluateCondition(nextExpr)
+		}
 		cmp := cond.CompItem
 		seriesVal, err := df.GetSeriesByColumn(cmp.Column)
 		if err != nil {
@@ -519,8 +523,8 @@ func NewFromSeries(ses ...*series.Series) (df *DataFrame, err error) {
 	for i := 0; i < colNum; i++ {
 		key := nSeries[i].FieldName
 		if key == "" {
-			key = strconv.Itoa(i)
-			nSeries[i].FieldName = "C" + key
+			key = "C" + strconv.Itoa(i)
+			nSeries[i].FieldName = key
 		}
 		df.fields[i] = key
 		df.fieldSeriesMap[key] = i

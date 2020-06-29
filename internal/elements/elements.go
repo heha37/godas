@@ -169,6 +169,14 @@ func (element ElementValue) Compare(cond *condition.CondValue) (result bool, err
 				err = fmt.Errorf("compare error: %s", e)
 				return
 			}
+		case types.TypeBool:
+			leftVal := element.Value.(bool)
+			var e error
+			result, e = cond.CompareBool(leftVal)
+			if e != nil {
+				err = fmt.Errorf("compare error: %s", e)
+				return
+			}
 		}
 	}
 	return

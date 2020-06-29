@@ -1,4 +1,4 @@
-package utils
+package internal
 
 func If(condition bool, trueVal, falseVal interface{}) interface{} {
 	if condition {

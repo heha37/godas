@@ -14,7 +14,7 @@ const (
 	ComparatorGT = ">"
 	ComparatorLT = "<"
 	ComparatorGTE = ">="
-	ComparatorEq ="="
+	ComparatorEq = "="
 	ComparatorLTE = "<="
 	ComparatorIn = "in"
 	ComparatorIsNan = "is_nan"
@@ -66,6 +66,20 @@ func (condVal *CondValue) CompareFloat64(leftVal float64) (compareResult bool, e
 		compareResult = leftVal > rightVal
 	case ComparatorLT:
 		compareResult = leftVal < rightVal
+	}
+	return
+}
+
+func (condVal *CondValue) CompareBool(leftVal bool) (compareResult bool, err error) {
+	item := condVal.CompItem
+	rightVal, ok := item.Value.(bool)
+	if !ok {
+		err = errors.New(fmt.Sprintf("can't convert value %v to bool", item.Value))
+		return
+	}
+	switch item.Comparator {
+	case ComparatorEq:
+		compareResult = leftVal == rightVal
 	}
 	return
 }

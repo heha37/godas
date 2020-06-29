@@ -1,4 +1,4 @@
-package series
+package godas
 
 import (
 	"errors"
@@ -7,130 +7,103 @@ import (
 	"github.com/hunknownz/godas/index"
 	"github.com/hunknownz/godas/internal/elements"
 	sbool "github.com/hunknownz/godas/internal/elements_bool"
+	"github.com/hunknownz/godas/internal/elements_composite"
 	sfloat "github.com/hunknownz/godas/internal/elements_float"
 	sint "github.com/hunknownz/godas/internal/elements_int"
 	sobject "github.com/hunknownz/godas/internal/elements_object"
 	sstring "github.com/hunknownz/godas/internal/elements_string"
-	"github.com/hunknownz/godas/order"
 	"github.com/hunknownz/godas/types"
 	"reflect"
 )
 
 type Series struct {
-	FieldName string
-	elements elements.Elements
+	array *elements_composite.Array
 }
 
 func (se *Series) Copy() (newSeries *Series) {
-	newElements := se.elements.Copy()
 	newSeries = &Series{
-		FieldName: se.FieldName,
-		elements:newElements,
+		array: se.array.Copy(),
 	}
 	return
 }
 
 func (se *Series) Type() types.Type {
-	return se.elements.Type()
+	return se.array.Type()
 }
 
 func (se *Series) Len() int {
-	return se.elements.Len()
+	return se.array.Len()
 }
 
 func (se *Series) Subset(index index.IndexInt) (newSeries *Series, err error) {
-	newElements, err := se.elements.Subset(index)
+	array, err := se.array.Subset(index)
 	if err != nil {
 		err = fmt.Errorf("subset series error: %w", err)
 	}
 	newSeries = &Series{
-		FieldName: se.FieldName,
-		elements:newElements,
+		array,
 	}
 	return
 }
 
 func (se *Series) IsNaN() []bool {
-	return se.elements.IsNaN()
+	return se.array.IsNaN()
 }
 
 func (se *Series) IsCondition(cond *condition.Condition) (ixs index.IndexBool, err error) {
-	expr := cond.Prepare()
-	seLen := se.elements.Len()
-	ixs = make(index.IndexBool, seLen)
-	for i := 0; i < seLen; i++ {
-		element, e := se.elements.Location(i)
-		if e != nil {
-			err = fmt.Errorf("is condition error: %w", e)
-			return
-		}
-		ixs[i] = element.EvaluateCondition(expr)
-		if element.Err != nil {
-			err = element.Err
-			return
-		}
-	}
-	return ixs, nil
+	return se.array.IsCondition(cond)
 }
 
 func (se *Series) Filter(cond *condition.Condition) (newSeries *Series, err error) {
-	ixs, err := se.IsCondition(cond)
-	if err != nil {
-		err = fmt.Errorf("filter error: %w", err)
+	array, e := se.array.Filter(cond)
+	if e != nil {
+		err = fmt.Errorf("series filter error: %w", e)
 		return
 	}
-	idx := make(index.IndexInt, 0)
-	for ix, ixVal := range ixs {
-		if ixVal {
-			idx = append(idx, uint32(ix))
-		}
-	}
-	newSeries, err = se.Subset(idx)
-	if err != nil {
-		err = fmt.Errorf("filter error: %w", err)
-		return
+	newSeries = &Series{
+		array,
 	}
 	return
 }
 
 func (se *Series) At(coord int) (value elements.ElementValue, err error) {
-	return se.elements.Location(coord)
+	return se.array.At(coord)
 }
 
-func NewCondition() *condition.Condition {
+func NewSeriesCondition() *condition.Condition {
 	return condition.NewCondition(condition.ConditionTypeSeries)
 }
 
-func (se *Series) NewIntLessFunc(f order.IntLessFunc) order.LessFunc {
-	elements := se.elements.(sint.ElementsInt64)
+func (se *Series) NewIntLessFunc(f IntLessFunc) LessFunc {
+	elements := se.array.Elements.(sint.ElementsInt64)
 	return func(i, j int) bool {
 		return f(elements[i], elements[j])
 	}
 }
 
-func (se *Series) defaultIntLessFunc() order.LessFunc {
-	elements := se.elements.(sint.ElementsInt64)
+func (se *Series) defaultIntLessFunc() LessFunc {
+	elements := se.array.Elements.(sint.ElementsInt64)
 	return func(i, j int) bool {
 		return elements[i] < elements[j]
 	}
 }
 
-func (se *Series) NewFloatLessFunc(f order.FloatLessFunc) order.LessFunc {
-	elements := se.elements.(sfloat.ElementsFloat64)
+func (se *Series) NewFloatLessFunc(f FloatLessFunc) LessFunc {
+	elements := se.array.Elements.(sfloat.ElementsFloat64)
 	return func(i, j int) bool {
 		return f(elements[i], elements[j])
 	}
 }
 
-func (se *Series) NewStringLessFunc(f order.StringLessFunc) order.LessFunc {
-	elements := se.elements.(sstring.ElementsString)
+func (se *Series) NewStringLessFunc(f StringLessFunc) LessFunc {
+	elements := se.array.Elements.(sstring.ElementsString)
 	return func(i, j int) bool {
 		return f(elements[i], elements[j])
 	}
 }
 
-func (se *Series) NewBoolLessFunc(f order.BoolLessFunc) order.LessFunc {
-	elements := se.elements.(sbool.ElementsBool)
+func (se *Series) NewBoolLessFunc(f BoolLessFunc) LessFunc {
+	elements := se.array.Elements.(sbool.ElementsBool)
 	return func(i, j int) bool {
 		a, _ := elements.Location(i)
 		b, _ := elements.Location(j)
@@ -138,8 +111,8 @@ func (se *Series) NewBoolLessFunc(f order.BoolLessFunc) order.LessFunc {
 	}
 }
 
-func (se *Series) defaultBoolLessFunc() order.LessFunc {
-	elements := se.elements.(sbool.ElementsBool)
+func (se *Series) defaultBoolLessFunc() LessFunc {
+	elements := se.array.Elements.(sbool.ElementsBool)
 	return func(i, j int) bool {
 		a, _ := elements.Location(i)
 		b, _ := elements.Location(j)
@@ -149,18 +122,14 @@ func (se *Series) defaultBoolLessFunc() order.LessFunc {
 	}
 }
 
-func (se *Series) Sort(inPlace bool, ascending bool, orderBy ...order.LessFunc) (newSe *Series, err error) {
+func (se *Series) Sort(inPlace bool, ascending bool, orderBy ...LessFunc) (newSe *Series, err error) {
 	if inPlace {
 		newSe = se
 	} else {
-		newSe = &Series{
-			FieldName: se.FieldName,
-			elements:  se.elements,
-		}
-		se.elements = se.elements.Copy()
+		newSe = se.Copy()
 	}
 
-	var f order.LessFunc
+	var f LessFunc
 	if len(orderBy) > 0 {
 		f = orderBy[0]
 	} else {
@@ -179,7 +148,7 @@ func (se *Series) Sort(inPlace bool, ascending bool, orderBy ...order.LessFunc) 
 }
 
 func (se *Series) Swap(i, j int) {
-	se.elements.Swap(i, j)
+	se.array.Swap(i, j)
 }
 
 func (se *Series) Append(copy bool, records ...interface{}) (newSe *Series, err error) {
@@ -223,11 +192,12 @@ func (se *Series) Append(copy bool, records ...interface{}) (newSe *Series, err 
 		}
 	}
 
-	newSe.elements, _ = newSe.elements.Append(copy, records...)
+	newSe.array, _ = newSe.array.Append(copy, records...)
 	return
 }
 
-func New(values interface{}, fieldName string) (se *Series, err error) {
+func NewSeries(values interface{}, fieldName string) (se *Series, err error) {
+	array := new(elements_composite.Array)
 	switch values.(type) {
 	case []int:
 		vals := values.([]int)
@@ -237,19 +207,19 @@ func New(values interface{}, fieldName string) (se *Series, err error) {
 			vals64[i] = int64(vals[i])
 		}
 		newElements := sint.NewElementsInt64(vals64)
-		se = &Series{elements:newElements}
+		array.Elements = newElements
 	case []int64:
 		vals := values.([]int64)
 		newElements := sint.NewElementsInt64(vals)
-		se = &Series{elements:newElements}
+		array.Elements = newElements
 	case []bool:
 		vals := values.([]bool)
 		newElements := sbool.NewElementsBool(vals)
-		se = &Series{elements:newElements}
+		array.Elements = newElements
 	case []string:
 		vals := values.([]string)
 		newElements := sstring.NewElementsString(vals)
-		se = &Series{elements:newElements}
+		array.Elements = newElements
 	case []float32:
 		vals := values.([]float32)
 		valsLen := len(vals)
@@ -258,22 +228,24 @@ func New(values interface{}, fieldName string) (se *Series, err error) {
 			vals64[i] = float64(vals[i])
 		}
 		newElements := sfloat.NewElementsFloat64(vals64)
-		se = &Series{elements:newElements}
+		array.Elements = newElements
 	case []float64:
 		vals := values.([]float64)
 		newElements := sfloat.NewElementsFloat64(vals)
-		se = &Series{elements:newElements}
+		array.Elements = newElements
 	case []interface{}:
 		vals := values.([]interface{})
 		newElements := sobject.NewElementsObject(vals)
-		se = &Series{elements:newElements}
+		array.Elements = newElements
 	default:
 		typ := reflect.TypeOf(values).Kind().String()
 		err = errors.New(fmt.Sprintf("new series errors: type %s is not supported", typ))
 		return
 	}
+	array.FieldName = fieldName
 
-	se.FieldName = fieldName
-
+	se = &Series{
+		array: array,
+	}
 	return
 }

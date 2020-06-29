@@ -11,9 +11,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 func TestNewDataFrame(t *testing.T) {
@@ -23,8 +20,8 @@ func TestNewDataFrame(t *testing.T) {
 	dataInt2 := []int{
 		6,7,8,9,10,
 	}
-	seriesInt := se.New(dataInt, "")
-	seriesInt2 := se.New(dataInt2, "")
+	seriesInt, _ := se.New(dataInt, "")
+	seriesInt2, _ := se.New(dataInt2, "")
 
 	df, _ := dataframe.NewFromSeries(seriesInt, seriesInt2)
 	fmt.Printf("%v\n", df)
@@ -37,18 +34,18 @@ func TestDataFrameCondition(t *testing.T) {
 	dataInt2 := []int{
 		6,7,8,9,10,
 	}
-	seriesInt := se.New(dataInt, "")
-	seriesInt2 := se.New(dataInt2, "")
+	seriesInt, _ := se.New(dataInt, "")
+	seriesInt2, _ := se.New(dataInt2, "")
 
 	df, _ := dataframe.NewFromSeries(seriesInt, seriesInt2)
 	condition := dataframe.NewCondition()
-	condition.Or(">", 2, "0")
-	condition.And("<", 9, "1")
+	condition.Or(">", 2, "C0")
+	condition.And("<", 9, "C1")
 	ixs, e := df.IsCondition(condition)
 	fmt.Printf("%v %v\n", ixs, e)
 	newDataFrame, _ := df.Filter(condition)
 	fmt.Printf("%v\n", newDataFrame)
-	series, _ := newDataFrame.GetSeriesByColumn("0")
+	series, _ := newDataFrame.GetSeriesByColumn("C0")
 	fmt.Printf("%v\n", series)
 }
 
@@ -59,8 +56,8 @@ func TestDataFrameLightCondition(t *testing.T) {
 	dataInt2 := []int{
 		6,7,
 	}
-	seriesInt := se.New(dataInt, "")
-	seriesInt2 := se.New(dataInt2, "")
+	seriesInt, _ := se.New(dataInt, "")
+	seriesInt2, _ := se.New(dataInt2, "")
 
 	df, _ := dataframe.NewFromSeries(seriesInt, seriesInt2)
 	condition := dataframe.NewCondition()
@@ -71,6 +68,30 @@ func TestDataFrameLightCondition(t *testing.T) {
 	newDataFrame, _ := df.Filter(condition)
 	fmt.Printf("%v\n", newDataFrame)
 	series, _ := newDataFrame.GetSeriesByColumn("0")
+	fmt.Printf("%v\n", series)
+}
+
+func TestDataFrameConditionWithCond(t *testing.T) {
+	dataInt := []int{
+		1,2,3,4,5,
+	}
+	dataInt2 := []int{
+		6,7,8,9,10,
+	}
+	seriesInt, _ := se.New(dataInt, "")
+	seriesInt2, _ := se.New(dataInt2, "")
+
+	df, _ := dataframe.NewFromSeries(seriesInt, seriesInt2)
+	condition := dataframe.NewCondition()
+	condition.Or(">", 2, "C0").And("<", 9, "C1")
+	newCond := dataframe.NewCondition()
+	newCond.Or(">", 3, "C0").And("<", 10, "C1").OrCond(condition)
+
+	ixs, e := df.IsCondition(newCond)
+	fmt.Printf("%v %v\n", ixs, e)
+	newDataFrame, _ := df.Filter(newCond)
+	fmt.Printf("%v\n", newDataFrame)
+	series, _ := newDataFrame.GetSeriesByColumn("C0")
 	fmt.Printf("%v\n", series)
 }
 
@@ -133,7 +154,7 @@ type MovieItem struct {
 
 func TestNewFromCSV(t *testing.T) {
 	df, _ := dataframe.NewFromCSV("./movies.csv")
-	dfLen := df.Len()
+	dfLen := df.NumRow()
 	fmt.Printf("%v\n", dfLen)
 	for i := 0; i < dfLen; i++ {
 		value, _ := df.At(i, "\"MOVIE_ID\"")
@@ -192,7 +213,6 @@ func TestDataFrameAt(t *testing.T) {
 }
 
 type People struct {
-	gorm.Model
 	Name string
 	Sex string
 
@@ -207,7 +227,7 @@ type People struct {
 
 func TestNewFromCSVOfficer(t *testing.T) {
 	df, _ := dataframe.NewFromCSV("./jinan.csv")
-	dfLen := df.Len()
+	dfLen := df.NumRow()
 
 	for i := 0; i < dfLen; i++ {
 			value, _ := df.At(i, "unit")
@@ -261,8 +281,8 @@ func TestNewFromStructs(t *testing.T) {
 	users = append(users, user1)
 	df, _ := dataframe.NewFromStructs(users)
 
-	dfLen := df.Len()
-	fmt.Printf("%v\n", df.Len())
+	dfLen := df.NumRow()
+	fmt.Printf("%v\n", df.NumRow())
 
 	for i := 0; i < dfLen; i++ {
 		value, _ := df.At(i, "Name")

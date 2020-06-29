@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hunknownz/godas/index"
+	"github.com/hunknownz/godas/internal"
 	"github.com/hunknownz/godas/internal/elements"
 	"github.com/hunknownz/godas/types"
-	"github.com/hunknownz/godas/utils"
 	"reflect"
 )
 
@@ -218,7 +218,7 @@ func (elements ElementsBool) Append(copy bool, values ...interface{}) (newElemen
 
 	for i, value := range values {
 		bValue := value.(bool)
-		boolValue := utils.If(bValue == true, trueValue, falseValue)
+		boolValue := internal.If(bValue == true, trueValue, falseValue)
 		nElements.set(i+oldElementsLen, boolValue.(bitBoolValue))
 	}
 	newElements = nElements

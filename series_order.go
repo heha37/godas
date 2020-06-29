@@ -1,17 +1,16 @@
-package series
+package godas
 
 import (
 	sfloat "github.com/hunknownz/godas/internal/elements_float"
 	sstring "github.com/hunknownz/godas/internal/elements_string"
-	"github.com/hunknownz/godas/order"
 	"github.com/hunknownz/godas/types"
 	"sort"
 )
 
 type seriesSorter struct {
-	lessFunc order.LessFunc
+	lessFunc  LessFunc
 	ascending bool
-	series *Series
+	series    *Series
 }
 
 func (sorter *seriesSorter) Len() int {
@@ -23,22 +22,24 @@ func (sorter *seriesSorter) Less(i, j int) bool {
 }
 
 func (sorter *seriesSorter) Swap(i, j int) {
-	sorter.series.elements.Swap(i, j)
+	array := sorter.series.array
+	array.Elements.Swap(i, j)
 }
 
 func (sorter *seriesSorter) Sort() {
+	se := sorter.series
 	if sorter.lessFunc == nil {
-		typ := sorter.series.Type()
+		typ := se.Type()
 		switch typ {
 		case types.TypeFloat:
-			elements := sorter.series.elements.(sfloat.ElementsFloat64)
+			elements := se.array.Elements.(sfloat.ElementsFloat64)
 			sortSlice := sort.Float64Slice(elements)
 			if !sorter.ascending {
 				sort.Sort(sort.Reverse(sortSlice))
 			}
 			sort.Sort(sortSlice)
 		case types.TypeString:
-			elements := sorter.series.elements.(sstring.ElementsString)
+			elements := se.array.Elements.(sstring.ElementsString)
 			sortSlice := sort.StringSlice(elements)
 			if !sorter.ascending {
 				sort.Sort(sort.Reverse(sortSlice))
@@ -55,7 +56,7 @@ func (sorter *seriesSorter) Sort() {
 	}
 }
 
-func newSeriesSorter(se *Series, ascending bool, lessFunc order.LessFunc) (sorter *seriesSorter) {
+func newSeriesSorter(se *Series, ascending bool, lessFunc LessFunc) (sorter *seriesSorter) {
 	return &seriesSorter{
 		lessFunc:  lessFunc,
 		ascending: ascending,

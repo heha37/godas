@@ -1,9 +1,9 @@
-package order
+package godas
 
 type SortKey struct {
-	Column string
+	Column    string
 	Ascending bool
-	LessFunc LessFunc
+	LessFunc  LessFunc
 }
 
 type LessFunc func(i, j int) bool

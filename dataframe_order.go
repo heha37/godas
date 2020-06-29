@@ -1,8 +1,7 @@
-package dataframe
+package godas
 
 import (
 	"fmt"
-	"github.com/hunknownz/godas/order"
 	"github.com/hunknownz/godas/types"
 	"math/big"
 	"sort"
@@ -10,7 +9,7 @@ import (
 )
 
 type dataframeSorter struct {
-	sortKeys []order.SortKey
+	sortKeys []SortKey
 	dataframe *DataFrame
 }
 
@@ -49,7 +48,7 @@ func (sorter *dataframeSorter) Sort() {
 	return
 }
 
-func newDataframeSorter(df *DataFrame, sortKeys ...order.SortKey) (sorter *dataframeSorter, err error) {
+func newDataframeSorter(df *DataFrame, sortKeys ...SortKey) (sorter *dataframeSorter, err error) {
 	for i := range sortKeys {
 		if sortKeys[i].LessFunc == nil {
 			se, e := df.getOriginSeriesByColumn(sortKeys[i].Column)

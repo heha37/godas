@@ -8,4 +8,5 @@ const (
 	TypeBool Type = "bool"
 	TypeFloat Type = "float"
 	TypeObject Type = "object"
+	TypeComposite Type = "composite"
 )

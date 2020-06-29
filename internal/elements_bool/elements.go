@@ -1,7 +1,7 @@
 package elements_bool
 
 import (
-	"github.com/hunknownz/godas/utils"
+	"github.com/hunknownz/godas/internal"
 )
 
 func NewElementsBool(elements []bool) (newElements ElementsBool) {
@@ -18,7 +18,7 @@ func NewElementsBool(elements []bool) (newElements ElementsBool) {
 	newBitBools.clearBits()
 
 	for bitsI, value := range elements {
-		boolValue := utils.If(value == true, trueValue, falseValue)
+		boolValue := internal.If(value == true, trueValue, falseValue)
 		newBitBools.set(bitsI, boolValue.(bitBoolValue))
 	}
 
